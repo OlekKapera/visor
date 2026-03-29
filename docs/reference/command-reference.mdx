@@ -18,6 +18,7 @@ These inputs are accepted globally and, where relevant, by individual commands.
 | `format` | `text` or `json` |
 | `server-url` | Appium server URL |
 | `app-id` | App package or bundle identifier |
+| `attach` | Attach to an already running app process when possible |
 | `mock` | Use mock runtime instead of a real device |
 
 Important note: the current implementation always emits a JSON response envelope, even when `format` is set to `text`.
@@ -161,6 +162,7 @@ Optional runtime inputs:
 - `output`
 - `server-url`
 - `app-id`
+- `attach`
 - `mock`
 
 Response data fields:

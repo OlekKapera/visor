@@ -121,6 +121,27 @@ class CliTests(unittest.TestCase):
 
         self.assertEqual(code, 0)
         self.assertEqual(get_adapter_mock.call_args.kwargs["app_id"], "com.example.custom")
+        self.assertFalse(get_adapter_mock.call_args.kwargs["attach_to_running"])
+
+    def test_cmd_run_passes_attach_flag_to_adapter(self):
+        parser = cli.build_parser()
+        args = parser.parse_args(
+            [
+                "run",
+                "scenarios/checkout-smoke.json",
+                "--mock",
+                "--output",
+                "artifacts-test",
+                "--attach",
+            ]
+        )
+
+        with patch("visor.cli.get_adapter") as get_adapter_mock:
+            get_adapter_mock.return_value = MockAdapter("android")
+            code = cli.cmd_run(args)
+
+        self.assertEqual(code, 0)
+        self.assertTrue(get_adapter_mock.call_args.kwargs["attach_to_running"])
 
     def test_wait_command_succeeds_in_mock(self):
         code, out, _ = run_cmd(["wait", "--platform", "android", "--mock", "--ms", "10"])

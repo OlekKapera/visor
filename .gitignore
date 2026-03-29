@@ -40,3 +40,9 @@ artifacts-*/
 # OS files
 .DS_Store
 Thumbs.db
+
+# AI
+.claude
+.agents
+skills/
+skills-lock.json

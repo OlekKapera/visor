@@ -146,17 +146,38 @@ def _env(preferred: str, legacy: str, default: str | None = None) -> str | None:
     return os.getenv(preferred) or os.getenv(legacy) or default
 
 
+def _env_bool(preferred: str, legacy: str, default: bool = False) -> bool:
+    raw = _env(preferred, legacy)
+    if raw is None:
+        return default
+    return raw.strip().lower() in {"1", "true", "yes", "on"}
+
+
 class RealAppiumAdapter(PlatformAdapter):
-    def __init__(self, platform: str, server_url: str, device: Optional[str] = None, app_id: Optional[str] = None) -> None:
+    def __init__(
+        self,
+        platform: str,
+        server_url: str,
+        device: Optional[str] = None,
+        app_id: Optional[str] = None,
+        attach_to_running: bool = False,
+    ) -> None:
         self.platform = platform
         self.server_url = server_url
         self.device = device
         self.app_id = app_id
+        self.attach_to_running = attach_to_running
         self.driver = self._create_driver()
 
     def _create_driver(self):
         if webdriver is None:
             raise RuntimeError("Appium/Selenium dependencies are missing. Install in runtime environment or use --mock.")
+
+        attach_to_running = self.attach_to_running or _env_bool(
+            "VISOR_ATTACH_TO_RUNNING",
+            "PATF_ATTACH_TO_RUNNING",
+            default=False,
+        )
 
         if self.platform == "android":
             options = UiAutomator2Options()
@@ -166,6 +187,11 @@ class RealAppiumAdapter(PlatformAdapter):
             options.app_package = self.app_id or _env("VISOR_ANDROID_APP_PACKAGE", "PATF_ANDROID_APP_PACKAGE", DEFAULT_ANDROID_APP)
             options.app_activity = _env("VISOR_ANDROID_APP_ACTIVITY", "PATF_ANDROID_APP_ACTIVITY", ".MainActivity")
             options.new_command_timeout = 60
+            if attach_to_running:
+                options.set_capability("noReset", True)
+                options.set_capability("fullReset", False)
+                options.set_capability("autoLaunch", False)
+                options.set_capability("dontStopAppOnReset", True)
             return webdriver.Remote(self.server_url, options=options)
 
         if self.platform == "ios":
@@ -175,6 +201,12 @@ class RealAppiumAdapter(PlatformAdapter):
             options.device_name = self.device or _env("VISOR_IOS_DEVICE", "PATF_IOS_DEVICE", DEFAULT_IOS_DEVICE)
             options.bundle_id = self.app_id or _env("VISOR_IOS_BUNDLE_ID", "PATF_IOS_BUNDLE_ID", DEFAULT_IOS_BUNDLE)
             options.new_command_timeout = 60
+            if attach_to_running:
+                options.set_capability("noReset", True)
+                options.set_capability("fullReset", False)
+                options.set_capability("autoLaunch", False)
+                options.set_capability("shouldTerminateApp", False)
+                options.set_capability("forceAppLaunch", False)
             return webdriver.Remote(self.server_url, options=options)
 
         raise ValueError(f"Unsupported platform: {self.platform}")
@@ -344,8 +376,15 @@ def get_adapter(
     device: Optional[str] = None,
     use_mock: bool = False,
     app_id: Optional[str] = None,
+    attach_to_running: bool = False,
 ) -> PlatformAdapter:
     normalized = platform.lower()
     if use_mock:
         return MockAdapter(normalized)
-    return RealAppiumAdapter(normalized, server_url=server_url, device=device, app_id=app_id)
+    return RealAppiumAdapter(
+        normalized,
+        server_url=server_url,
+        device=device,
+        app_id=app_id,
+        attach_to_running=attach_to_running,
+    )

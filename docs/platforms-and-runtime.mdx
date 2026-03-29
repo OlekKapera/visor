@@ -71,6 +71,7 @@ Visor reads runtime configuration from environment variables when explicit runti
 | `VISOR_ANDROID_DEVICE` | Android device or emulator identifier |
 | `VISOR_IOS_BUNDLE_ID` | iOS bundle identifier |
 | `VISOR_IOS_DEVICE` | iOS simulator or device name |
+| `VISOR_ATTACH_TO_RUNNING` | Reuse running app process (`true`/`1`/`yes`/`on`) |
 
 Legacy `PATF_*` environment variable names are also accepted as fallbacks.
 
@@ -92,6 +93,13 @@ The main resolved values are:
 - server URL
 - app identifier
 - runtime mode
+
+## Attach mode
+
+When you pass `--attach` (or set `VISOR_ATTACH_TO_RUNNING=true`), Visor asks Appium to reuse the already running app process instead of launching from scratch.
+
+- Android capabilities used: `noReset=true`, `fullReset=false`, `autoLaunch=false`, `dontStopAppOnReset=true`
+- iOS capabilities used: `noReset=true`, `fullReset=false`, `autoLaunch=false`, `shouldTerminateApp=false`, `forceAppLaunch=false`
 
 ## Connectivity preflight
 

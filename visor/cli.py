@@ -66,8 +66,9 @@ def _resolved_runtime(args, scenario):
     server_url = args.server_url or DEFAULT_SERVER_URL
     use_mock = bool(args.mock)
     app_id = args.app_id
+    attach_to_running = bool(args.attach)
     scenario.meta["platform"] = platform
-    return platform, device, timeout, output_dir, server_url, use_mock, app_id
+    return platform, device, timeout, output_dir, server_url, use_mock, app_id, attach_to_running
 
 
 def _non_mock_preflight(platform: str, device: str, server_url: str):
@@ -103,12 +104,19 @@ def cmd_run(args) -> int:
         print(json.dumps(asdict(response), indent=2))
         return 1
 
-    platform, device, timeout, output_dir, server_url, use_mock, app_id = _resolved_runtime(args, scenario)
+    platform, device, timeout, output_dir, server_url, use_mock, app_id, attach_to_running = _resolved_runtime(args, scenario)
 
     try:
         if not use_mock:
             _non_mock_preflight(platform, device, server_url)
-        adapter = get_adapter(platform, server_url=server_url, device=device, use_mock=use_mock, app_id=app_id)
+        adapter = get_adapter(
+            platform,
+            server_url=server_url,
+            device=device,
+            use_mock=use_mock,
+            app_id=app_id,
+            attach_to_running=attach_to_running,
+        )
     except Exception as exc:
         response = _envelope_fail(
             command_id,
@@ -152,7 +160,7 @@ def cmd_benchmark(args) -> int:
         print(json.dumps(asdict(response), indent=2))
         return 1
 
-    platform, device, timeout, output_dir, server_url, use_mock, app_id = _resolved_runtime(args, scenario)
+    platform, device, timeout, output_dir, server_url, use_mock, app_id, attach_to_running = _resolved_runtime(args, scenario)
 
     signatures = []
     run_ids = []
@@ -175,7 +183,14 @@ def cmd_benchmark(args) -> int:
 
     for _ in range(args.runs):
         try:
-            adapter = get_adapter(platform, server_url=server_url, device=device, use_mock=use_mock, app_id=app_id)
+            adapter = get_adapter(
+                platform,
+                server_url=server_url,
+                device=device,
+                use_mock=use_mock,
+                app_id=app_id,
+                attach_to_running=attach_to_running,
+            )
             result = run_scenario(scenario, adapter=adapter, device=device, timeout_ms=timeout, artifact_base_dir=output_dir)
             write_reports(result, output_dir)
             signatures.append(result.determinism_signature)
@@ -218,9 +233,38 @@ def cmd_action(command: str, args) -> int:
     command_id = make_id("cmd")
     started_at = utc_now_iso()
     try:
-        adapter = get_adapter(args.platform, server_url=args.server_url, device=args.device, use_mock=args.mock, app_id=args.app_id)
+        adapter = get_adapter(
+            args.platform,
+            server_url=args.server_url,
+            device=args.device,
+            use_mock=args.mock,
+            app_id=args.app_id,
+            attach_to_running=args.attach,
+        )
         fn = getattr(adapter, command)
-        payload = fn({k: v for k, v in vars(args).items() if k not in {"command", "platform", "format", "output", "timeout", "verbose", "func", "server_url", "device", "mock", "seed", "app_id"} and v is not None})
+        payload = fn(
+            {
+                k: v
+                for k, v in vars(args).items()
+                if k
+                not in {
+                    "command",
+                    "platform",
+                    "format",
+                    "output",
+                    "timeout",
+                    "verbose",
+                    "func",
+                    "server_url",
+                    "device",
+                    "mock",
+                    "seed",
+                    "app_id",
+                    "attach",
+                }
+                and v is not None
+            }
+        )
         adapter.close()
         artifacts = []
         if isinstance(payload, dict):
@@ -247,6 +291,7 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--seed", type=int)
     p.add_argument("--server-url", default=DEFAULT_SERVER_URL)
     p.add_argument("--app-id", default=None)
+    p.add_argument("--attach", action="store_true")
     p.add_argument("--mock", action="store_true")
     p.add_argument("--verbose", action="store_true")
 
@@ -258,6 +303,7 @@ def build_parser() -> argparse.ArgumentParser:
         sp.add_argument("--device", default=None)
         sp.add_argument("--server-url", default=DEFAULT_SERVER_URL)
         sp.add_argument("--app-id", default=None)
+        sp.add_argument("--attach", action="store_true")
         sp.add_argument("--format", choices=["text", "json"], default="json")
         sp.add_argument("--mock", action="store_true")
         if c == "tap":
@@ -294,6 +340,7 @@ def build_parser() -> argparse.ArgumentParser:
     spr.add_argument("--format", choices=["text", "json"], default="json")
     spr.add_argument("--server-url", default=DEFAULT_SERVER_URL)
     spr.add_argument("--app-id")
+    spr.add_argument("--attach", action="store_true")
     spr.add_argument("--mock", action="store_true")
     spr.set_defaults(func=cmd_run)
 
@@ -308,6 +355,7 @@ def build_parser() -> argparse.ArgumentParser:
     spb.add_argument("--format", choices=["text", "json"], default="json")
     spb.add_argument("--server-url", default=DEFAULT_SERVER_URL)
     spb.add_argument("--app-id")
+    spb.add_argument("--attach", action="store_true")
     spb.add_argument("--mock", action="store_true")
     spb.set_defaults(func=cmd_benchmark)
 
