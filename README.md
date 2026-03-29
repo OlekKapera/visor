@@ -33,11 +33,4 @@ Supported today:
 
 ## Documentation
 
-Comprehensive product documentation lives in [`docs/`](docs/).
-
-Start with:
-
-- [`docs/index.mdx`](docs/index.mdx)
-- [`docs/concepts.mdx`](docs/concepts.mdx)
-- [`docs/features/scenarios.mdx`](docs/features/scenarios.mdx)
-- [`docs/reference/command-reference.mdx`](docs/reference/command-reference.mdx)
+Comprehensive product documentation lives in [the docs site](https://na-ca6c7a2b.mintlify.app).
