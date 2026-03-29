@@ -1,0 +1,26 @@
+{
+  "meta": {
+    "name": "empty-app-counter",
+    "version": "1",
+    "platform": "android",
+    "tags": ["smoke", "counter"]
+  },
+  "config": {
+    "timeoutMs": 15000,
+    "seed": 42,
+    "artifactsDir": "./artifacts"
+  },
+  "steps": [
+    { "id": "s1", "command": "screenshot", "args": { "label": "counter-initial" } },
+    { "id": "s2", "command": "wait", "args": { "ms": 2000 } },
+    { "id": "s3", "command": "source", "args": { "label": "counter-initial-ui" } },
+    { "id": "s4", "command": "tap", "args": { "target": "Increment" } },
+    { "id": "s5", "command": "wait", "args": { "ms": 500 } },
+    { "id": "s6", "command": "source", "args": { "label": "counter-after-increment-ui" } },
+    { "id": "s7", "command": "screenshot", "args": { "label": "counter-after-increment" } }
+  ],
+  "assertions": [],
+  "output": {
+    "report": ["summary", "json", "junit", "html"]
+  }
+}

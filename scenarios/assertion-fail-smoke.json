@@ -1,0 +1,23 @@
+{
+  "meta": {
+    "name": "assertion-fail-smoke",
+    "version": "1",
+    "platform": "android",
+    "tags": ["smoke"]
+  },
+  "config": {
+    "timeoutMs": 15000,
+    "seed": 42,
+    "artifactsDir": "./artifacts"
+  },
+  "steps": [
+    { "id": "s1", "command": "navigate", "args": { "to": "app://home" } },
+    { "id": "s2", "command": "screenshot", "args": { "label": "for-assertion-fail" } }
+  ],
+  "assertions": [
+    { "id": "a1", "type": "visible", "target": "text=MISSING-CART" }
+  ],
+  "output": {
+    "report": ["summary", "json", "junit", "html"]
+  }
+}
