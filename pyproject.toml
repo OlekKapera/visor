@@ -5,13 +5,38 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "visor"
 version = "0.1.0"
+authors = [
+  { name = "Aleksander Kapera" },
+]
 description = "Visor CLI for LLM-driven mobile app interaction and artifact capture"
 readme = "README.md"
 requires-python = ">=3.10"
+license = "MIT"
+license-files = ["LICEN[CS]E*"]
+keywords = ["appium", "mobile", "testing", "automation", "cli", "ios", "android"]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Environment :: Console",
+  "Intended Audience :: Developers",
+  "Operating System :: OS Independent",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3 :: Only",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Topic :: Software Development :: Testing",
+  "Topic :: Software Development :: Quality Assurance",
+]
 dependencies = [
   "Appium-Python-Client==5.2.7",
   "selenium==4.41.0",
 ]
+
+[project.urls]
+Homepage = "https://github.com/OlekKapera/visor"
+Documentation = "https://na-ca6c7a2b.mintlify.app"
+Repository = "https://github.com/OlekKapera/visor"
+Issues = "https://github.com/OlekKapera/visor/issues"
 
 [project.scripts]
 visor = "visor.cli:main"
