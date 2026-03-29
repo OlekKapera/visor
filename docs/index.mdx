@@ -1,97 +1,89 @@
 ---
-title: "Introduction"
-description: "Welcome to the new home for your documentation"
+title: "Visor overview"
+description: "Understand what Visor does, what problems it solves, and which parts of the product to read next."
 ---
 
-## Setting up
+Visor gives AI agents direct evidence from running mobile apps.
 
-Get your documentation site up and running in minutes.
+It does five things:
 
-<Card
-  title="Start here"
-  icon="rocket"
-  href="/quickstart"
-  horizontal
->
-  Follow our three step quickstart guide.
-</Card>
+1. Connects to a running iOS or Android app.
+2. Performs real UI actions such as taps, typing, navigation, and waits.
+3. Captures screenshots and UI source from the live app.
+4. Evaluates assertions against the observed UI state.
+5. Persists reports and artifacts so a person or an LLM can review what happened.
 
-## Make it yours
+## What Visor is for
 
-Design a docs site that looks great and empowers your users.
+Visor is built for cases where code alone is not enough to verify behavior.
 
-<Columns cols={2}>
-  <Card
-    title="Edit locally"
-    icon="pen-to-square"
-    href="/development"
-  >
-    Edit your docs locally and preview them in real time.
-  </Card>
-  <Card
-    title="Customize your site"
-    icon="palette"
-    href="/essentials/settings"
-  >
-    Customize the design and colors of your site to match your brand.
-  </Card>
-    <Card
-    title="Set up navigation"
-    icon="map"
-    href="/essentials/navigation"
-  >
-    Organize your docs to help users find what they need and succeed with your product.
-  </Card>
-  <Card
-    title="API documentation"
-    icon="terminal"
-    href="/api-reference/introduction"
-  >
-    Auto-generate API documentation from OpenAPI specifications.
-  </Card>
-</Columns>
+Typical use cases:
 
-## Create beautiful pages
+- Verify that a UI change actually rendered on screen.
+- Compare before and after state using screenshots and UI source.
+- Run the same scenario repeatedly to measure stability.
+- Produce machine-readable evidence for review, debugging, or automation.
 
-Everything you need to create world-class documentation.
+## Product scope
 
-<Columns cols={2}>
-  <Card
-    title="Write with MDX"
-    icon="pen-fancy"
-    href="/essentials/markdown"
-  >
-    Use MDX to style your docs pages.
-  </Card>
-  <Card
-    title="Code samples"
-    icon="code"
-    href="/essentials/code"
-  >
-    Add sample code to demonstrate how to use your product.
-  </Card>
-  <Card
-    title="Images"
-    icon="image"
-    href="/essentials/images"
-  >
-    Display images and other media.
-  </Card>
-  <Card
-    title="Reusable snippets"
-    icon="recycle"
-    href="/essentials/reusable-snippets"
-  >
-    Write once and reuse across your docs.
-  </Card>
-</Columns>
+Visor currently supports mobile applications only.
 
-## Need inspiration?
+Supported scope today:
 
-<Card
-  title="See complete examples"
-  icon="stars"
-  href="https://mintlify.com/customers"
->
-  Browse our showcase of exceptional documentation sites.
-</Card>
+- Android apps through Appium and UiAutomator2.
+- iOS apps through Appium and XCUITest.
+- Real device or simulator interaction.
+- Mock execution for dry runs and predictable artifacts.
+
+Out of scope today:
+
+- Web applications.
+- Desktop applications.
+- Rich assertion types beyond visibility checks.
+
+## Core building blocks
+
+The product is organized around a small set of concepts.
+
+| Concept | What it means |
+| --- | --- |
+| Target | The UI element or screen location Visor should act on. |
+| Action | A direct operation such as tap, type, navigate, wait, screenshot, or source capture. |
+| Scenario | A JSON document that defines a repeatable sequence of steps and optional assertions. |
+| Assertion | A rule checked after the steps finish. Today, visibility is the supported assertion type. |
+| Artifact | A file written during or after execution, such as a screenshot, XML source dump, or summary report. |
+| Determinism score | A stability score that shows how often repeated runs produced the same signature. |
+
+## Documentation map
+
+Read the pages in this order if you are new to Visor:
+
+- [Core concepts](/concepts)
+- [Platforms and runtime](/platforms-and-runtime)
+- [Interactions](/features/interactions)
+- [Targeting and selectors](/features/targeting-and-selectors)
+- [Evidence capture](/features/evidence-capture)
+- [Scenarios](/features/scenarios)
+- [Assertions and determinism](/features/assertions-and-determinism)
+- [Artifacts and reports](/features/artifacts-and-reports)
+
+Use the reference section when you need exact field names, inputs, outputs, or error behavior:
+
+- [Command reference](/reference/command-reference)
+- [Scenario schema](/reference/scenario-schema)
+- [Response schema](/reference/response-schema)
+- [Errors and exit codes](/reference/errors-and-exit-codes)
+
+## What Visor returns
+
+Every operation returns a structured response envelope.
+
+The envelope always tells you:
+
+- whether the operation succeeded or failed
+- when it started and ended
+- which artifacts were produced
+- what the next logical action is
+- which structured payload belongs to the operation
+
+Longer flows such as scenario runs also write files to disk so the run can be audited after the fact.

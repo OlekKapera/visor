@@ -1,0 +1,102 @@
+---
+title: "Targeting and selectors"
+description: "Learn how Visor identifies UI elements, how selector prefixes work, and when coordinate taps are appropriate."
+---
+
+Selectors are used in two places:
+
+- element-based taps
+- visibility assertions
+
+## Selector resolution
+
+If a target string has no prefix, Visor treats it as an accessibility identifier.
+
+Example:
+
+```text
+Increment
+```
+
+This resolves the same way as:
+
+```text
+accessibility=Increment
+```
+
+## Supported selector prefixes
+
+| Prefix | Meaning | Notes |
+| --- | --- | --- |
+| `accessibility=` | Accessibility identifier | Default when no prefix is present |
+| `id=` | Element id | Uses the driver id selector |
+| `text=` | Contains-style text match | Implemented as XPath across multiple common text-like attributes |
+| `xpath=` | Raw XPath | Most flexible and most fragile |
+| `uiautomator=` | Android UiSelector expression | Android only |
+| `predicate=` | iOS predicate string | iOS only |
+| `classchain=` | iOS class chain query | iOS only |
+
+## How `text=` works
+
+`text=` does not perform an exact single-attribute match.
+
+Instead, Visor builds an XPath selector that checks whether the provided value is contained in any of these attributes:
+
+- `text`
+- `content-desc`
+- `label`
+- `name`
+- `value`
+
+This makes `text=` convenient for cross-platform targeting, but it can also match more elements than expected.
+
+## Choosing the right selector type
+
+Use selectors in this order when possible:
+
+1. accessibility identifiers
+2. stable ids
+3. platform-specific selectors
+4. XPath
+5. coordinates
+
+This order matters because stable semantic selectors are easier to maintain and reason about.
+
+## Coordinate taps
+
+Coordinates are appropriate when:
+
+- there is no reliable selector
+- the target is a canvas-like region or custom-drawn control
+- you need a specific screen location rather than an element
+
+Coordinate inputs can be absolute or normalized.
+
+| Mode | Example | Meaning |
+| --- | --- | --- |
+| Absolute | `x=120`, `y=640` | Raw screen coordinates |
+| Normalized | `x=0.91`, `y=0.94`, `normalized=true` | Fraction of current screen width and height |
+
+## Assertion targets use the same syntax
+
+The `visible` assertion uses the same target parser as `tap`.
+
+That means these assertion targets are valid:
+
+- `Increment`
+- `accessibility=Increment`
+- `text=Checkout`
+- `id=primary-cta`
+- `xpath=//*[@text='Checkout']`
+- `uiautomator=new UiSelector().text("OK")`
+- `predicate=label == 'Done'`
+- ``classchain=**/XCUIElementTypeButton[`label == "Done"`]``
+
+## Known tradeoffs
+
+Important tradeoffs in the current selector system:
+
+- plain text defaults to accessibility ids, not visible text
+- `text=` is intentionally broad and may over-match
+- XPath is flexible but tends to be the least stable option
+- coordinate taps are sensitive to layout shifts and device differences

@@ -1,0 +1,149 @@
+---
+title: "Scenarios"
+description: "Understand how Visor scenarios are structured, validated, executed, and turned into repeatable runs."
+---
+
+A scenario is the main way to describe a repeatable verification flow in Visor.
+
+## Scenario structure
+
+A scenario is a JSON object with these top-level fields:
+
+| Field | Required | Purpose |
+| --- | --- | --- |
+| `meta` | Yes | Scenario identity and platform |
+| `config` | Yes | Runtime defaults such as timeout, seed, and artifact directory |
+| `steps` | Yes | Ordered execution steps |
+| `assertions` | No | Checks evaluated after the steps finish |
+| `output` | No | Output-related preferences |
+
+Unknown top-level fields are treated as validation errors.
+
+## Minimal valid example
+
+```json
+{
+  "meta": {
+    "name": "checkout-smoke",
+    "version": "1",
+    "platform": "android"
+  },
+  "config": {
+    "seed": 42
+  },
+  "steps": [
+    {
+      "id": "s1",
+      "command": "screenshot",
+      "args": {
+        "label": "app-opened"
+      }
+    }
+  ],
+  "assertions": [],
+  "output": {
+    "report": ["summary", "json", "junit", "html"]
+  }
+}
+```
+
+## Supported step commands
+
+Each step must use one of these commands:
+
+- `tap`
+- `navigate`
+- `act`
+- `screenshot`
+- `wait`
+- `source`
+
+Any other command name fails validation.
+
+## Validation behavior
+
+Validation checks both structure and command-specific arguments.
+
+Examples of validation errors:
+
+- missing `meta`, `config`, or `steps`
+- `steps` is not a non-empty list
+- unsupported command name
+- `tap` mixes `target` with coordinates
+- `tap` provides only one coordinate
+- `navigate` omits `to`
+- `wait` omits `ms`
+- `meta.platform` is not `ios` or `android`
+- unknown fields at any validated level
+
+Examples of validation warnings:
+
+- `config.seed` is missing
+- `screenshot` step is missing a label
+
+If validation produces any error-level issue, the scenario is rejected.
+
+## Runtime resolution for scenarios
+
+Before executing a scenario, Visor resolves:
+
+- platform
+- device
+- timeout
+- output directory
+- server URL
+- mock or real runtime mode
+- app identifier
+
+Scenario configuration can provide defaults, but explicit runtime input takes precedence.
+
+## Step execution model
+
+Scenario steps run in the order listed in `steps`.
+
+Important behavior:
+
+- each step produces a `StepResult`
+- failures are recorded per step
+- a failed step does not stop later steps from running
+- timeout overruns convert a step into a failure even if the action itself returned data
+- screenshot and source steps add artifacts to the run record
+
+## Assertion phase
+
+Assertions are evaluated after all steps complete.
+
+Current assertion support:
+
+- `visible`
+
+Assertion failures change the final run status to failed.
+
+If both a step failure and an assertion failure occur, the run ends in failure and the run-level error reflects the assertion failure because assertions are evaluated last.
+
+## Run result shape
+
+A scenario run produces:
+
+- a unique run id
+- start and end timestamps
+- platform and device metadata
+- per-step results
+- assertion results
+- collected artifact paths
+- a determinism signature
+- an optional run-level error payload
+
+## Benchmark relationship
+
+A benchmark is repeated execution of the same scenario.
+
+For each iteration, Visor:
+
+1. creates a fresh adapter
+2. executes the scenario
+3. writes reports
+4. records the determinism signature
+5. counts failures
+
+The benchmark then computes a determinism score from the collected signatures.

@@ -1,0 +1,132 @@
+---
+title: "Response schema"
+description: "Reference the JSON envelope, run result structure, step result structure, and assertion result objects returned by Visor."
+---
+
+Visor currently returns JSON envelopes for every command.
+
+## Top-level envelope
+
+| Field | Type | Meaning |
+| --- | --- | --- |
+| `status` | string | `ok` or `fail` |
+| `command_id` | string | Unique command invocation id |
+| `started_at` | string | UTC timestamp |
+| `ended_at` | string | UTC timestamp |
+| `artifacts` | array of string | Artifact paths associated with the response |
+| `next_action` | string | Hint for the next logical operation |
+| `error` | object or null | Present on failure |
+| `data` | object | Command-specific payload |
+
+## Error payload
+
+| Field | Type | Meaning |
+| --- | --- | --- |
+| `code` | string | Structured error code |
+| `message` | string | Human-readable summary |
+| `likely_cause` | string | Best current explanation |
+| `next_step` | string | Suggested remediation |
+
+## Run result
+
+When a scenario run succeeds or fails, `data.run` contains a run result.
+
+| Field | Type | Meaning |
+| --- | --- | --- |
+| `run_id` | string | Unique run id |
+| `platform` | string | `android` or `ios` |
+| `device` | string | Resolved device name |
+| `started_at` | string | Run start timestamp |
+| `ended_at` | string | Run end timestamp |
+| `status` | string | `ok` or `fail` |
+| `steps` | array | Ordered step results |
+| `assertions` | array | Assertion results |
+| `artifacts` | array of string | Final copied artifact paths |
+| `determinism_signature` | string | SHA-256 signature of normalized run data |
+| `seed` | number or null | Scenario seed if provided |
+| `error` | object or null | Run-level error payload |
+
+## Step result
+
+| Field | Type | Meaning |
+| --- | --- | --- |
+| `id` | string | Step id |
+| `command` | string | Executed command |
+| `status` | string | `ok` or `fail` |
+| `duration_ms` | number | Step duration |
+| `details` | object | Adapter-returned payload |
+| `error` | object or null | Present when the step failed |
+
+## Assertion result
+
+Assertion results are plain objects with these fields:
+
+| Field | Type | Meaning |
+| --- | --- | --- |
+| `id` | string | Assertion id |
+| `type` | string | Assertion type |
+| `target` | string | Selector that was checked |
+| `status` | string | `passed` or `failed` |
+| `details` | string | Failure or informational detail |
+
+## Benchmark result payload
+
+Benchmark responses store their command-specific payload in `data`.
+
+| Field | Type | Meaning |
+| --- | --- | --- |
+| `runs` | number | Number of iterations attempted |
+| `threshold` | number | Required determinism threshold |
+| `determinismScore` | number | Calculated score |
+| `pass` | boolean | Whether the benchmark passed |
+| `failures` | number | Count of failed iterations |
+| `runIds` | array of string | Run ids created during the benchmark |
+
+## Validation payload
+
+Validation responses use this `data` structure:
+
+| Field | Type | Meaning |
+| --- | --- | --- |
+| `valid` | boolean | Whether the scenario passed validation |
+| `issues` | array | Validation errors and warnings |
+
+Each issue contains:
+
+- `severity`
+- `code`
+- `message`
+- `path`
+
+## Example envelope
+
+```json
+{
+  "status": "ok",
+  "command_id": "cmd_123456789abc",
+  "started_at": "2026-03-29T16:00:00Z",
+  "ended_at": "2026-03-29T16:00:01Z",
+  "artifacts": [
+    "artifacts/run_123/screenshots/001-app-opened.png"
+  ],
+  "next_action": "report",
+  "error": null,
+  "data": {
+    "run": {
+      "run_id": "run_123456789abc",
+      "platform": "android",
+      "device": "emulator-5554",
+      "started_at": "2026-03-29T16:00:00Z",
+      "ended_at": "2026-03-29T16:00:01Z",
+      "status": "ok",
+      "steps": [],
+      "assertions": [],
+      "artifacts": [],
+      "determinism_signature": "...",
+      "seed": 42,
+      "error": null
+    },
+    "warnings": []
+  }
+}
+```

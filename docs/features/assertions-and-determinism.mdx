@@ -1,0 +1,112 @@
+---
+title: "Assertions and determinism"
+description: "Learn how Visor evaluates assertions, computes determinism signatures, and scores repeated runs."
+---
+
+## Assertions
+
+Visor currently supports one assertion type.
+
+| Assertion type | Meaning |
+| --- | --- |
+| `visible` | The target must exist in the current UI tree |
+
+### How visibility is evaluated
+
+The runtime adapter checks whether at least one element matches the target selector.
+
+Result behavior:
+
+- if a match exists, the assertion passes
+- if no match exists, the assertion fails
+- if the assertion type is unsupported, the assertion fails
+
+Each assertion result includes:
+
+- `id`
+- `type`
+- `target`
+- `status`
+- `details`
+
+## Run-level failure rules
+
+A scenario run fails when either of these conditions is true:
+
+- one or more steps failed
+- one or more assertions failed
+
+Run-level error codes are chosen this way:
+
+- step failures produce `ACTION_ERROR`
+- assertion failures produce `ASSERTION_ERROR`
+
+Because assertions are processed after steps, an assertion failure becomes the final run-level error when both conditions are present.
+
+## Determinism signature
+
+Each scenario run produces a determinism signature.
+
+The signature is a SHA-256 hash of a normalized run payload that includes:
+
+- platform
+- step ids
+- step command names
+- step statuses
+- step details
+- assertion results
+
+Variable artifact paths are removed before hashing so that different run ids do not change the signature by themselves.
+
+Specifically, Visor removes `args.path` from step details before computing the hash.
+
+## Determinism score
+
+The determinism score is used in benchmark runs.
+
+Computation:
+
+1. take the first run signature as the baseline
+2. count how many run signatures match that baseline
+3. divide by the total number of runs
+4. express the result as a percentage rounded to two decimals
+
+Example:
+
+- 5 runs total
+- 4 signatures match the first run
+- score = `80.00`
+
+## Benchmark pass criteria
+
+A benchmark passes only when both conditions are true:
+
+- determinism score is greater than or equal to the requested threshold
+- failure count is `0`
+
+If either condition is not met, the benchmark returns a failing result.
+
+## What changes the signature
+
+These changes can alter the determinism signature:
+
+- different step statuses
+- different returned metadata values
+- different assertion outcomes
+- different platform values
+- different text or selector results reflected in step details
+
+These changes do not alter the signature on their own:
+
+- different artifact paths caused only by a different run id
+
+## Practical interpretation
+
+Use assertions to answer "did the expected UI condition hold?"
+
+Use the determinism score to answer "did the same scenario behave the same way across repeated runs?"
+
+You often need both measures:
+
+- assertions tell you about correctness
+- determinism tells you about stability

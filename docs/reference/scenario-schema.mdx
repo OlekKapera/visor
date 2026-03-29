@@ -1,0 +1,165 @@
+---
+title: "Scenario schema"
+description: "Reference every supported scenario field, its requirements, and the validation rules Visor applies."
+---
+
+## Top-level schema
+
+| Path | Type | Required | Notes |
+| --- | --- | --- | --- |
+| `$` | object | Yes | Scenario root |
+| `$.meta` | object | Yes | Scenario metadata |
+| `$.config` | object | Yes | Runtime defaults |
+| `$.steps` | array | Yes | Must be a non-empty list |
+| `$.assertions` | array | No | Defaults to empty list when omitted or null |
+| `$.output` | object | No | Output preferences |
+
+Allowed top-level fields are exactly:
+
+- `meta`
+- `config`
+- `steps`
+- `assertions`
+- `output`
+
+Any other top-level field is an error.
+
+## `meta`
+
+Allowed fields:
+
+| Path | Type | Required | Notes |
+| --- | --- | --- | --- |
+| `$.meta.name` | string | Yes | Scenario name |
+| `$.meta.version` | string | Yes | Scenario version |
+| `$.meta.platform` | string | Yes | Must be `ios` or `android` |
+| `$.meta.tags` | array | No | Free-form tags |
+
+## `config`
+
+Allowed fields:
+
+| Path | Type | Required | Notes |
+| --- | --- | --- | --- |
+| `$.config.timeoutMs` | number | No | Per-step timeout threshold |
+| `$.config.seed` | number | No | Missing seed triggers a warning |
+| `$.config.artifactsDir` | string | No | Default report output directory |
+
+## `steps[]`
+
+Each step must be an object with these fields:
+
+| Path | Type | Required | Notes |
+| --- | --- | --- | --- |
+| `$.steps[i].id` | string | Yes | Step identifier |
+| `$.steps[i].command` | string | Yes | One of the supported commands |
+| `$.steps[i].args` | object | Yes | Command-specific arguments |
+
+Supported commands:
+
+- `tap`
+- `navigate`
+- `act`
+- `screenshot`
+- `wait`
+- `source`
+
+### Step argument rules
+
+#### `tap`
+
+Valid forms:
+
+```json
+{ "target": "Increment" }
+```
+
+```json
+{ "x": 0.5, "y": 0.8, "normalized": true }
+```
+
+Rules:
+
+- cannot mix `target` with `x` or `y`
+- if using coordinates, both `x` and `y` are required
+- if present, `normalized` must be boolean
+
+#### `navigate`
+
+Required field inside `args`:
+
+- `to`
+
+#### `act`
+
+Validation only checks that `args` is present.
+
+Runtime support is narrower than schema support. The runtime currently accepts:
+
+- `name=type` with `target` and `value`
+- `name=back`
+
+#### `screenshot`
+
+No hard schema requirement beyond `args`, but missing `label` triggers a warning because it reduces determinism.
+
+#### `wait`
+
+Required field inside `args`:
+
+- `ms`
+
+#### `source`
+
+No additional schema requirement beyond `args`.
+
+## `assertions[]`
+
+Each assertion must be an object with these fields:
+
+| Path | Type | Required | Notes |
+| --- | --- | --- | --- |
+| `$.assertions[i].id` | string | Yes | Assertion identifier |
+| `$.assertions[i].type` | string | Yes | Runtime only supports `visible` |
+| `$.assertions[i].target` | string | Yes | Selector string |
+
+Important detail: unsupported assertion types pass schema validation but fail during execution.
+
+## `output`
+
+Allowed fields:
+
+| Path | Type | Required | Notes |
+| --- | --- | --- | --- |
+| `$.output.report` | any | No | Accepted as a field name, but not interpreted by the current report writer |
+
+## Full example
+
+```json
+{
+  "meta": {
+    "name": "empty-app-counter",
+    "version": "1",
+    "platform": "android",
+    "tags": ["smoke", "counter"]
+  },
+  "config": {
+    "timeoutMs": 15000,
+    "seed": 42,
+    "artifactsDir": "./artifacts"
+  },
+  "steps": [
+    { "id": "s1", "command": "screenshot", "args": { "label": "counter-initial" } },
+    { "id": "s2", "command": "wait", "args": { "ms": 2000 } },
+    { "id": "s3", "command": "source", "args": { "label": "counter-initial-ui" } },
+    { "id": "s4", "command": "tap", "args": { "target": "Increment" } },
+    { "id": "s5", "command": "wait", "args": { "ms": 500 } },
+    { "id": "s6", "command": "source", "args": { "label": "counter-after-increment-ui" } },
+    { "id": "s7", "command": "screenshot", "args": { "label": "counter-after-increment" } }
+  ],
+  "assertions": [],
+  "output": {
+    "report": ["summary", "json", "junit", "html"]
+  }
+}
+```

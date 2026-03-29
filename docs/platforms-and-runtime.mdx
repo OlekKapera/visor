@@ -1,0 +1,110 @@
+---
+title: "Platforms and runtime"
+description: "See which platforms Visor supports, how runtime resolution works, and which defaults and environment variables affect execution."
+---
+
+## Supported platforms
+
+Visor supports two mobile platforms:
+
+| Platform | Driver stack | Default device name |
+| --- | --- | --- |
+| Android | Appium with `UiAutomator2` | `emulator-5554` |
+| iOS | Appium with `XCUITest` | `iPhone 17 Pro` |
+
+Visor is mobile-only today. Web support is not implemented.
+
+## Runtime modes
+
+Visor can run in two modes.
+
+### Real runtime
+
+In real runtime mode, Visor connects to an Appium server and interacts with an actual simulator, emulator, or device.
+
+What real runtime requires:
+
+- a reachable Appium server
+- a booted iOS or Android target
+- Appium and Selenium runtime dependencies
+- a valid app identifier or environment-based fallback
+
+### Mock runtime
+
+In mock runtime mode, Visor does not talk to a real device.
+
+Mock mode is useful when you want to:
+
+- validate wiring and payload handling
+- produce deterministic test artifacts
+- exercise run and benchmark flows without device infrastructure
+
+Mock mode behavior:
+
+- screenshots are written as a valid 1x1 PNG
+- UI source is written as a minimal XML document
+- visibility assertions fail only when the target contains `missing` or `not_found`
+
+## Default runtime values
+
+When you do not set an explicit runtime value, Visor resolves defaults.
+
+| Setting | Default value |
+| --- | --- |
+| Appium server URL | `http://127.0.0.1:4723` |
+| Android app id fallback | `com.example.app` |
+| iOS bundle id fallback | `com.example.app` |
+| Android default activity fallback | `.MainActivity` |
+| Android default device | `emulator-5554` |
+| iOS default device | `iPhone 17 Pro` |
+
+For scenario execution, platform is resolved from the scenario unless you override it at runtime.
+
+## Environment variables
+
+Visor reads runtime configuration from environment variables when explicit runtime input is not provided.
+
+| Environment variable | Purpose |
+| --- | --- |
+| `VISOR_ANDROID_APP_PACKAGE` | Android app package name |
+| `VISOR_ANDROID_APP_ACTIVITY` | Android launch activity |
+| `VISOR_ANDROID_DEVICE` | Android device or emulator identifier |
+| `VISOR_IOS_BUNDLE_ID` | iOS bundle identifier |
+| `VISOR_IOS_DEVICE` | iOS simulator or device name |
+
+Legacy `PATF_*` environment variable names are also accepted as fallbacks.
+
+## Runtime resolution order
+
+For scenario runs and benchmarks, Visor resolves runtime settings in this order:
+
+1. explicit runtime input
+2. scenario-level defaults where applicable
+3. environment variables
+4. built-in defaults
+
+The main resolved values are:
+
+- platform
+- device
+- timeout
+- artifact output directory
+- server URL
+- app identifier
+- runtime mode
+
+## Connectivity preflight
+
+For full scenario execution in real runtime mode, Visor performs a preflight network check against the Appium host and port.
+
+If the Appium server is unreachable, Visor fails early with a target initialization error instead of starting the run.
+
+## Current limitations
+
+The runtime layer currently has these important limits:
+
+- no web runtime
+- no desktop runtime
+- no built-in device provisioning
+- no multi-app orchestration within a single run
+- no assertion engine beyond visibility checks

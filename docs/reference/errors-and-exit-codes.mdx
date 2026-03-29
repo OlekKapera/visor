@@ -1,0 +1,98 @@
+---
+title: "Errors and exit codes"
+description: "Review Visor's structured error codes, exit codes, and the conditions that produce each one."
+---
+
+## Structured error codes
+
+Visor uses five top-level error codes.
+
+| Error code | Meaning | Typical source |
+| --- | --- | --- |
+| `INPUT_ERROR` | The request or scenario input is invalid | Validation failures, schema issues, invalid platform |
+| `TARGET_ERROR` | The runtime target could not be initialized | Appium unreachable, missing driver dependencies, unsupported platform |
+| `ACTION_ERROR` | An action or step failed | Unsupported `act` variant, bad selector, invalid wait value, step timeout |
+| `ASSERTION_ERROR` | An assertion failed | Visibility target missing or unsupported assertion type |
+| `SYSTEM_ERROR` | Reserved for system-level failures | Not currently emitted by the main flows |
+
+## Where each error code appears
+
+### `INPUT_ERROR`
+
+Common cases:
+
+- scenario parsing fails
+- scenario validation fails
+- required schema fields are missing
+- unsupported platform value in `meta.platform`
+
+### `TARGET_ERROR`
+
+Common cases:
+
+- Appium server cannot be reached in real runtime mode
+- driver dependencies are not available in the runtime environment
+- runtime adapter cannot be initialized
+
+### `ACTION_ERROR`
+
+Common cases:
+
+- direct action command throws an exception
+- a scenario step throws an exception
+- a step exceeds the configured timeout
+- `act` receives an unsupported operation
+- `tap` receives invalid argument combinations
+
+### `ASSERTION_ERROR`
+
+Common cases:
+
+- a `visible` assertion did not find the target
+- an unsupported assertion type was evaluated
+
+## Exit codes
+
+Visor uses these process exit codes.
+
+| Exit code | Meaning |
+| --- | --- |
+| `0` | Success |
+| `1` | Input failure, target initialization failure, or direct action failure |
+| `2` | Scenario run completed but one or more steps or assertions failed |
+| `3` | Benchmark did not meet the threshold or one or more benchmark iterations failed |
+
+## Command-specific behavior
+
+### Validation
+
+- returns `0` when the scenario is valid
+- returns `1` when validation or parsing fails
+
+### Direct action commands
+
+- return `0` on success
+- return `1` when the action fails
+
+### Scenario runs
+
+- return `0` when all steps and assertions pass
+- return `2` when the run completes with step or assertion failures
+- return `1` when setup fails before execution starts
+
+### Benchmarks
+
+- return `0` when the score meets the threshold and failures are `0`
+- return `3` when the threshold is not met or any iteration failed
+- return `1` when scenario validation or runtime preflight fails before the benchmark loop
+
+## Error payload design
+
+Every failure response includes a structured error payload with:
+
+- `code`
+- `message`
+- `likely_cause`
+- `next_step`
+
+This makes failures usable for both people and automated agents.

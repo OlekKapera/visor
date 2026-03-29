@@ -1,0 +1,113 @@
+---
+title: "Interactions"
+description: "Understand the direct actions Visor can perform against a running app and how each one behaves."
+---
+
+Visor exposes a focused interaction set. Each interaction maps to one action in the runtime adapter.
+
+## Available actions
+
+| Action | Purpose | Writes files |
+| --- | --- | --- |
+| `tap` | Click a target element or a coordinate on screen | No |
+| `navigate` | Send the runtime to a destination value | No |
+| `act` | Perform a helper action such as typing or going back | No |
+| `wait` | Pause for a fixed number of milliseconds | No |
+| `screenshot` | Capture the current screen | Yes |
+| `source` | Capture the current UI source | Yes |
+
+This page covers direct interaction actions. Screenshot and source behavior are documented in [Evidence capture](/features/evidence-capture).
+
+## Tap
+
+`tap` supports two mutually exclusive modes.
+
+### Target mode
+
+Use target mode when you want Visor to find an element and click it.
+
+Required input:
+
+- `target`
+
+Behavior:
+
+- plain text targets are treated as accessibility identifiers
+- prefixed selectors such as `text=` or `xpath=` are parsed into the correct driver selector
+- the first matching element is clicked
+
+### Coordinate mode
+
+Use coordinate mode when no stable selector is available.
+
+Required inputs:
+
+- `x`
+- `y`
+
+Optional input:
+
+- `normalized`
+
+Behavior:
+
+- if `normalized` is false or omitted, `x` and `y` are treated as screen coordinates
+- if `normalized` is true, `x` and `y` are interpreted as a fraction of screen width and height
+- Android coordinate taps use `mobile: clickGesture`
+- iOS coordinate taps use `mobile: tap`
+
+Validation rules:
+
+- target mode cannot be combined with coordinates
+- coordinate mode requires both `x` and `y`
+
+## Navigate
+
+`navigate` sends a destination value to the runtime.
+
+Required input:
+
+- `to`
+
+Current behavior:
+
+- in the real Appium adapter, the destination is passed to the driver through `get(to)`
+- in mock mode, the destination is echoed back in the action payload
+
+## Act
+
+`act` is a compact action family for common operations.
+
+Supported operations today:
+
+| Name | Required inputs | Behavior |
+| --- | --- | --- |
+| `type` | `target`, `value` | Finds the target element, clears it, then sends keys |
+| `back` | none | Sends a back navigation event |
+
+If `act` receives any other operation name, it fails.
+
+## Wait
+
+`wait` pauses execution for a fixed number of milliseconds.
+
+Required input:
+
+- `ms`
+
+Rules:
+
+- `ms` must be present
+- `ms` must be non-negative
+
+## Timeout handling inside runs
+
+When an action is executed inside a scenario, each step records its duration.
+
+If a step duration exceeds the resolved timeout for the run:
+
+- the step is marked as failed
+- the step gets an `ACTION_ERROR`
+- the run continues to the remaining steps and then to assertions
+
+This means a scenario can finish with a full record of all steps even when one step exceeded the time budget.

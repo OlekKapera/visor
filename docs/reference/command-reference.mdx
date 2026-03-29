@@ -1,0 +1,223 @@
+---
+title: "Command reference"
+description: "See every Visor command, the inputs it accepts, and the shape of the data it returns."
+---
+
+This page documents the current command surface exactly as implemented.
+
+## Global runtime inputs
+
+These inputs are accepted globally and, where relevant, by individual commands.
+
+| Input | Meaning |
+| --- | --- |
+| `platform` | `android` or `ios` |
+| `device` | Device or simulator identifier |
+| `timeout` | Per-step timeout budget in milliseconds for scenario runs |
+| `output` | Base output directory for run artifacts and reports |
+| `format` | `text` or `json` |
+| `server-url` | Appium server URL |
+| `app-id` | App package or bundle identifier |
+| `mock` | Use mock runtime instead of a real device |
+
+Important note: the current implementation always emits a JSON response envelope, even when `format` is set to `text`.
+
+## Direct action commands
+
+### `tap`
+
+Purpose: click an element or coordinate.
+
+Inputs:
+
+- target mode: `target`
+- coordinate mode: `x`, `y`
+- optional: `normalized`
+
+Returns action payload fields:
+
+- `action`
+- `platform`
+- `args`
+
+`args` contains either:
+
+- `target`, or
+- `x`, `y`, and `normalized`
+
+### `navigate`
+
+Purpose: move to a destination.
+
+Required input:
+
+- `to`
+
+Returns action payload fields:
+
+- `action`
+- `platform`
+- `args.to`
+
+### `act`
+
+Purpose: perform a helper action.
+
+Supported variants:
+
+- `name=type` with `target` and `value`
+- `name=back`
+
+Returns action payload fields:
+
+- `action`
+- `platform`
+- `args`
+
+### `screenshot`
+
+Purpose: capture a PNG image.
+
+Required input:
+
+- `label`
+
+Returns action payload fields:
+
+- `action`
+- `platform`
+- `args.label`
+- `args.file`
+- `args.path`
+- `args.width`
+- `args.height`
+
+### `wait`
+
+Purpose: pause execution.
+
+Required input:
+
+- `ms`
+
+Returns action payload fields:
+
+- `action`
+- `platform`
+- `args.ms`
+
+### `source`
+
+Purpose: capture current UI source as XML.
+
+Optional inputs:
+
+- `label`
+- `path`
+
+Returns action payload fields:
+
+- `action`
+- `platform`
+- `args.label`
+- `args.file`
+- `args.path`
+- `args.format`
+- `args.bytes`
+
+## Scenario commands
+
+### `validate`
+
+Purpose: parse a scenario and return validation issues.
+
+Required input:
+
+- `scenario`
+
+Response data fields:
+
+- `valid`
+- `issues`
+
+Exit behavior:
+
+- returns success when the scenario is valid
+- returns failure when parsing or validation fails
+
+### `run`
+
+Purpose: execute one scenario, evaluate assertions, and write reports.
+
+Required input:
+
+- `scenario`
+
+Optional runtime inputs:
+
+- `platform`
+- `device`
+- `timeout`
+- `output`
+- `server-url`
+- `app-id`
+- `mock`
+
+Response data fields:
+
+- `run`
+- `warnings`
+
+The `run` object contains the full run result, including step results, assertion results, artifacts, determinism signature, and run-level error data.
+
+### `benchmark`
+
+Purpose: run one scenario repeatedly and compute a determinism score.
+
+Required input:
+
+- `scenario`
+
+Optional inputs:
+
+- `runs` with default `20`
+- `threshold` with default `95.0`
+- the same runtime inputs accepted by `run`
+
+Response data fields:
+
+- `runs`
+- `threshold`
+- `determinismScore`
+- `pass`
+- `failures`
+- `runIds`
+
+### `report`
+
+Purpose: return guidance about where run reports are stored.
+
+Optional input:
+
+- `path`, which defaults to `artifacts`
+
+Response data fields:
+
+- `message`
+- `path`
+- `format`
+
+## Response envelope behavior
+
+Every command returns the same top-level envelope fields:
+
+- `status`
+- `command_id`
+- `started_at`
+- `ended_at`
+- `artifacts`
+- `next_action`
+- `error`
+- `data`
+
+`next_action` is a hint, not an execution chain. Examples include `run`, `report`, and `none`.

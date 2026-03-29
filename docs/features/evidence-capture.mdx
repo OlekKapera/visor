@@ -1,0 +1,100 @@
+---
+title: "Evidence capture"
+description: "See how Visor captures screenshots and UI source, what metadata it returns, and where files are written."
+---
+
+Evidence capture is one of Visor's core capabilities. It turns app state into files and structured metadata that an LLM or human can inspect.
+
+## Screenshot capture
+
+The `screenshot` action captures the current screen and writes a PNG file.
+
+Returned metadata includes:
+
+- `label`
+- `file`
+- `path`
+- `width`
+- `height`
+
+Behavior details:
+
+- if a path is provided directly, Visor writes to that path
+- if no path is provided, Visor writes `<label>.png`
+- parent directories are created automatically
+- real runtime uses Appium screenshot persistence
+- mock runtime writes a valid 1x1 transparent PNG
+
+## UI source capture
+
+The `source` action captures the current UI hierarchy and writes an XML file.
+
+Returned metadata includes:
+
+- `label`
+- `file`
+- `path`
+- `format`, which is `xml`
+- `bytes`
+
+Behavior details:
+
+- if a path is provided directly, Visor writes to that path
+- if no path is provided, Visor writes `<label>.xml`
+- parent directories are created automatically
+- real runtime writes the current Appium `page_source`
+- mock runtime writes a minimal XML hierarchy
+
+## Automatic paths during scenario runs
+
+When `screenshot` and `source` are executed inside a scenario run, Visor injects deterministic per-run paths before the adapter call.
+
+Injected directories:
+
+- screenshots go under `<output>/<run-id>/screenshots/`
+- UI sources go under `<output>/<run-id>/sources/`
+
+The file name is based on the step label.
+
+Examples:
+
+- `<output>/<run-id>/screenshots/app-opened.png`
+- `<output>/<run-id>/sources/counter-after-increment-ui.xml`
+
+## Artifact collection
+
+During a scenario run, Visor records screenshot and source paths as run artifacts.
+
+Later, the report writer copies these artifacts into the final report structure and renames them with an ordered numeric prefix.
+
+Example final names:
+
+- `001-app-opened.png`
+- `002-counter-after-increment-ui.xml`
+
+## Why both screenshot and source matter
+
+The two capture types answer different questions.
+
+| Evidence type | Best for |
+| --- | --- |
+| Screenshot | Visual layout, styling, and state visible on screen |
+| UI source | Structure, text values, identifiers, and machine comparison |
+
+For reliable verification, many scenarios should collect both.
+
+## Recommended labeling practice
+
+Labels are not required in every case, but they are strongly recommended.
+
+Good labels make artifacts easier to compare over time.
+
+Examples of useful labels:
+
+- `before-login`
+- `after-login`
+- `cart-opened`
+- `checkout-form`
+- `confirmation-screen`
+
+In scenario validation, missing screenshot labels trigger a determinism warning.

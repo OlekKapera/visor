@@ -1,0 +1,120 @@
+---
+title: "Artifacts and reports"
+description: "Review the files Visor writes for each run, how artifacts are organized, and what each report file contains."
+---
+
+Scenario runs and benchmarks write a run directory under the configured output root.
+
+## Directory layout
+
+The base layout for one run is:
+
+```text
+<output>/<run-id>/
+├── env/
+│   ├── device.json
+│   └── runtime.json
+├── screenshots/
+├── sources/
+├── summary.txt
+├── summary.json
+├── junit.xml
+├── timeline.log
+└── report.html
+```
+
+## Report files
+
+### `summary.txt`
+
+A compact text summary with:
+
+- run id
+- platform
+- device
+- run status
+- determinism signature
+- artifact count
+
+### `summary.json`
+
+A canonical JSON serialization of the full run result.
+
+This is the most complete machine-readable report file.
+
+### `junit.xml`
+
+A JUnit-style report built from step results.
+
+Important detail:
+
+- test cases correspond to scenario steps
+- failures in the JUnit output reflect step failures
+- assertion failures are not represented as separate JUnit test cases
+
+### `timeline.log`
+
+A compact ordered list of step results.
+
+Each line contains:
+
+- sequence number
+- step id
+- command
+- status
+- duration in milliseconds
+
+### `report.html`
+
+A minimal HTML summary page.
+
+Current contents are intentionally simple:
+
+- run id
+- final status
+- artifact count
+
+### Environment files
+
+`env/runtime.json` contains:
+
+- seed
+- started timestamp
+- ended timestamp
+
+`env/device.json` contains:
+
+- platform
+- device
+
+## Artifact materialization
+
+Raw artifact paths from the run are copied into the report directory.
+
+Copy behavior:
+
+- screenshots are copied into `screenshots/`
+- non-PNG artifacts are copied into `sources/`
+- copied files are renamed with a zero-padded numeric prefix
+
+Example:
+
+```text
+screenshots/001-app-opened.png
+sources/002-counter-after-increment-ui.xml
+```
+
+## Which operations create artifacts
+
+| Operation | Artifact type |
+| --- | --- |
+| `screenshot` | PNG image |
+| `source` | XML source dump |
+| `run` | Full report directory plus copied artifacts |
+| `benchmark` | One full report directory per iteration |
+
+## Report helper behavior
+
+Visor also exposes a report helper that returns the expected report location format for a given output root.
+
+It does not parse or render existing reports. It only returns path guidance.

@@ -1,0 +1,126 @@
+---
+title: "Core concepts"
+description: "Learn the terms and execution model that define how Visor works."
+---
+
+This page defines the concepts used across the rest of the documentation.
+
+## Execution model
+
+A Visor run follows a simple model:
+
+1. Resolve the runtime target.
+2. Execute one or more actions against the app.
+3. Capture evidence during those actions.
+4. Evaluate assertions after the steps finish.
+5. Persist artifacts and reports.
+6. Return a structured result envelope.
+
+## Key concepts
+
+### Runtime target
+
+A runtime target is the environment Visor connects to.
+
+A target includes:
+
+- platform: `android` or `ios`
+- device identity
+- Appium server location
+- app identifier when one is required
+- runtime mode: real or mock
+
+### Action
+
+An action is one unit of interaction or evidence capture.
+
+Available actions today:
+
+- `tap`
+- `navigate`
+- `act`
+- `screenshot`
+- `wait`
+- `source`
+
+Each action produces a structured payload. Some actions also write files.
+
+### Scenario
+
+A scenario is a JSON document with four functional sections:
+
+- `meta`: identifies the scenario and platform
+- `config`: defines runtime-related defaults such as timeout, seed, and artifact directory
+- `steps`: the ordered actions to execute
+- `assertions`: checks evaluated after the steps complete
+
+A scenario is the unit used for validation, full execution, and benchmarking.
+
+### Step result
+
+Each scenario step produces a step result.
+
+A step result contains:
+
+- the step id
+- the command name
+- pass or fail status
+- duration in milliseconds
+- returned details from the adapter
+- an error payload if the step failed
+
+### Assertion result
+
+Assertions run after all steps have executed.
+
+Important behavior:
+
+- Visor does not stop before the assertion phase just because a prior step failed.
+- Assertions are evaluated against the current app state at the end of the step sequence.
+- Unsupported assertion types are treated as failures.
+
+### Artifact
+
+An artifact is a file written to disk during execution.
+
+Common artifacts:
+
+- screenshots as `.png`
+- UI source dumps as `.xml`
+- summary and timeline reports
+- JUnit XML
+- environment metadata
+- a minimal HTML report
+
+### Determinism signature
+
+A determinism signature is a hash of the run structure and results.
+
+It is derived from:
+
+- platform
+- step ids
+- step commands
+- step statuses
+- step details, excluding variable artifact paths
+- assertion results
+
+The signature is used to compare repeated runs.
+
+### Determinism score
+
+The determinism score is the percentage of repeated runs whose signature matched the first run in the benchmark set.
+
+A higher score means the scenario behaves more consistently.
+
+## Reading the results correctly
+
+When you analyze a Visor run, separate the result into three layers:
+
+| Layer | Purpose |
+| --- | --- |
+| Envelope | High-level success or failure, timestamps, artifact list, and next action hint. |
+| Run payload | Per-step results, assertion results, run-level status, determinism signature, and run id. |
+| Files on disk | Screenshots, XML, summaries, JUnit output, environment metadata, and HTML report. |
+
+This separation matters because the envelope is optimized for quick machine handling, while the artifacts are optimized for deeper review.
