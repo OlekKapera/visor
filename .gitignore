@@ -46,3 +46,6 @@ Thumbs.db
 .agents
 skills/
 skills-lock.json
+
+# Visor
+.visor/

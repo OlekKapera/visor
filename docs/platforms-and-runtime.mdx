@@ -24,7 +24,7 @@ In real runtime mode, Visor connects to an Appium server and interacts with an a
 
 What real runtime requires:
 
-- a reachable Appium server
+- a reachable Appium server (or auto-start enabled)
 - a booted iOS or Android target
 - Appium and Selenium runtime dependencies
 - a valid app identifier or environment-based fallback
@@ -72,6 +72,7 @@ Visor reads runtime configuration from environment variables when explicit runti
 | `VISOR_IOS_BUNDLE_ID` | iOS bundle identifier |
 | `VISOR_IOS_DEVICE` | iOS simulator or device name |
 | `VISOR_ATTACH_TO_RUNNING` | Reuse running app process (`true`/`1`/`yes`/`on`) |
+| `VISOR_APPIUM_CMD` | Command Visor uses when it needs to launch Appium |
 
 Legacy `PATF_*` environment variable names are also accepted as fallbacks.
 
@@ -101,11 +102,21 @@ When you pass `--attach` (or set `VISOR_ATTACH_TO_RUNNING=true`), Visor asks App
 - Android capabilities used: `noReset=true`, `fullReset=false`, `autoLaunch=false`, `dontStopAppOnReset=true`
 - iOS capabilities used: `noReset=true`, `fullReset=false`, `autoLaunch=false`, `shouldTerminateApp=false`, `forceAppLaunch=false`
 
-## Connectivity preflight
+## Appium lifecycle and connectivity preflight
 
-For full scenario execution in real runtime mode, Visor performs a preflight network check against the Appium host and port.
+For scenario execution and direct action commands in real runtime mode, Visor performs a preflight check against the Appium host and port.
 
-If the Appium server is unreachable, Visor fails early with a target initialization error instead of starting the run.
+If Appium is unreachable and auto-start is enabled (default), Visor attempts to launch Appium first.
+
+If Appium is unreachable and auto-start is disabled (`--no-auto-start-appium`), Visor fails early with a target initialization error.
+
+When Visor auto-starts Appium for a command, it also stops that managed Appium process when the command completes.
+
+You can also manage lifecycle explicitly with:
+
+- `visor start`
+- `visor status`
+- `visor stop`
 
 ## Current limitations
 

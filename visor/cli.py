@@ -3,11 +3,17 @@ from __future__ import annotations
 
 import argparse
 import json
-import socket
 from dataclasses import asdict
 from urllib.parse import urlparse
 
 from framework.adapters import DEFAULT_SERVER_URL, get_adapter
+from framework.appium_lifecycle import (
+    DEFAULT_STARTUP_TIMEOUT_SECONDS,
+    is_appium_reachable,
+    start_managed_appium,
+    status_managed_appium,
+    stop_managed_appium,
+)
 from framework.errors import make_error
 from framework.models import CommandResponse, ErrorCode, Status
 from framework.report import write_reports
@@ -67,23 +73,64 @@ def _resolved_runtime(args, scenario):
     use_mock = bool(args.mock)
     app_id = args.app_id
     attach_to_running = bool(args.attach)
+    auto_start_appium = not bool(getattr(args, "no_auto_start_appium", False))
+    appium_cmd = getattr(args, "appium_cmd", None)
+    startup_timeout = float(getattr(args, "startup_timeout", DEFAULT_STARTUP_TIMEOUT_SECONDS))
     scenario.meta["platform"] = platform
-    return platform, device, timeout, output_dir, server_url, use_mock, app_id, attach_to_running
+    return (
+        platform,
+        device,
+        timeout,
+        output_dir,
+        server_url,
+        use_mock,
+        app_id,
+        attach_to_running,
+        auto_start_appium,
+        appium_cmd,
+        startup_timeout,
+    )
 
 
-def _non_mock_preflight(platform: str, device: str, server_url: str):
+def _ensure_non_mock_runtime(
+    platform: str,
+    device: str,
+    server_url: str,
+    auto_start_appium: bool,
+    appium_cmd: str | None,
+    startup_timeout: float,
+):
     parsed = urlparse(server_url)
     host = parsed.hostname or "127.0.0.1"
     port = parsed.port or 4723
 
-    try:
-        with socket.create_connection((host, port), timeout=2):
-            pass
-    except OSError as exc:
+    if is_appium_reachable(server_url, timeout=2.0):
+        return {"serverUrl": server_url, "started": False}
+
+    if not auto_start_appium:
         raise RuntimeError(
-            f"Cannot reach Appium server at {host}:{port} ({exc}). "
+            f"Cannot reach Appium server at {host}:{port}. "
             f"Start Appium and ensure {platform} target '{device}' is booted."
         )
+
+    return start_managed_appium(
+        server_url=server_url,
+        appium_cmd=appium_cmd,
+        startup_timeout_s=startup_timeout,
+    )
+
+
+def _stop_auto_started_appium(runtime_state: dict | None) -> None:
+    if not runtime_state or not runtime_state.get("started"):
+        return
+    server_url = runtime_state.get("serverUrl")
+    if not server_url:
+        return
+
+    try:
+        stop_managed_appium(server_url=server_url, force=False)
+    except Exception:
+        stop_managed_appium(server_url=server_url, force=True)
 
 
 def cmd_run(args) -> int:
@@ -104,11 +151,26 @@ def cmd_run(args) -> int:
         print(json.dumps(asdict(response), indent=2))
         return 1
 
-    platform, device, timeout, output_dir, server_url, use_mock, app_id, attach_to_running = _resolved_runtime(args, scenario)
+    (
+        platform,
+        device,
+        timeout,
+        output_dir,
+        server_url,
+        use_mock,
+        app_id,
+        attach_to_running,
+        auto_start_appium,
+        appium_cmd,
+        startup_timeout,
+    ) = _resolved_runtime(args, scenario)
+
+    runtime_state = None
+    cleanup_error = None
 
     try:
         if not use_mock:
-            _non_mock_preflight(platform, device, server_url)
+            runtime_state = _ensure_non_mock_runtime(platform, device, server_url, auto_start_appium, appium_cmd, startup_timeout)
         adapter = get_adapter(
             platform,
             server_url=server_url,
@@ -124,13 +186,24 @@ def cmd_run(args) -> int:
             ErrorCode.TARGET_ERROR,
             "Failed to initialize platform target",
             str(exc),
-            "For local non-mock runs: start Appium on --server-url, boot target emulator/simulator, and install runtime deps from requirements.txt",
+            (
+                "For local non-mock runs: install Appium runtime, "
+                "run `visor start` (or remove --no-auto-start-appium), "
+                "boot target emulator/simulator, and install runtime deps from requirements.txt"
+            ),
         )
         print(json.dumps(asdict(response), indent=2))
         return 1
 
-    result = run_scenario(scenario, adapter=adapter, device=device, timeout_ms=timeout, artifact_base_dir=output_dir)
-    outputs = write_reports(result, output_dir)
+    try:
+        result = run_scenario(scenario, adapter=adapter, device=device, timeout_ms=timeout, artifact_base_dir=output_dir)
+        outputs = write_reports(result, output_dir)
+    finally:
+        if runtime_state and runtime_state.get("started"):
+            try:
+                _stop_auto_started_appium(runtime_state)
+            except Exception as exc:
+                cleanup_error = exc
 
     if result.status == Status.FAIL and result.error is not None:
         response = _envelope_fail(
@@ -144,6 +217,20 @@ def cmd_run(args) -> int:
         response.artifacts = list(outputs.values())
     else:
         response = _envelope_ok(command_id, started_at, artifacts=list(outputs.values()), next_action="report")
+
+    if cleanup_error is not None:
+        response = _envelope_fail(
+            command_id,
+            started_at,
+            ErrorCode.TARGET_ERROR,
+            "Scenario completed but failed to stop auto-started Appium",
+            str(cleanup_error),
+            "Inspect .visor/appium logs and stop Appium manually",
+        )
+        response.artifacts = list(outputs.values())
+        response.data = {"run": asdict(result), "warnings": [asdict(i) for i in issues if i.severity == "warning"]}
+        print(json.dumps(asdict(response), indent=2))
+        return 1
 
     response.data = {"run": asdict(result), "warnings": [asdict(i) for i in issues if i.severity == "warning"]}
     print(json.dumps(asdict(response), indent=2))
@@ -160,15 +247,30 @@ def cmd_benchmark(args) -> int:
         print(json.dumps(asdict(response), indent=2))
         return 1
 
-    platform, device, timeout, output_dir, server_url, use_mock, app_id, attach_to_running = _resolved_runtime(args, scenario)
+    (
+        platform,
+        device,
+        timeout,
+        output_dir,
+        server_url,
+        use_mock,
+        app_id,
+        attach_to_running,
+        auto_start_appium,
+        appium_cmd,
+        startup_timeout,
+    ) = _resolved_runtime(args, scenario)
 
     signatures = []
     run_ids = []
     failures = 0
 
+    runtime_state = None
+    cleanup_error = None
+
     if not use_mock:
         try:
-            _non_mock_preflight(platform, device, server_url)
+            runtime_state = _ensure_non_mock_runtime(platform, device, server_url, auto_start_appium, appium_cmd, startup_timeout)
         except Exception as exc:
             response = _envelope_fail(
                 command_id,
@@ -176,32 +278,59 @@ def cmd_benchmark(args) -> int:
                 ErrorCode.TARGET_ERROR,
                 "Failed benchmark preflight for non-mock runtime",
                 str(exc),
-                "Start Appium, verify local device target, then rerun benchmark",
+                "Start Appium (or allow auto-start), verify local device target, then rerun benchmark",
             )
             print(json.dumps(asdict(response), indent=2))
             return 1
 
-    for _ in range(args.runs):
-        try:
-            adapter = get_adapter(
-                platform,
-                server_url=server_url,
-                device=device,
-                use_mock=use_mock,
-                app_id=app_id,
-                attach_to_running=attach_to_running,
-            )
-            result = run_scenario(scenario, adapter=adapter, device=device, timeout_ms=timeout, artifact_base_dir=output_dir)
-            write_reports(result, output_dir)
-            signatures.append(result.determinism_signature)
-            run_ids.append(result.run_id)
-            if result.status != Status.OK:
+    try:
+        for _ in range(args.runs):
+            try:
+                adapter = get_adapter(
+                    platform,
+                    server_url=server_url,
+                    device=device,
+                    use_mock=use_mock,
+                    app_id=app_id,
+                    attach_to_running=attach_to_running,
+                )
+                result = run_scenario(scenario, adapter=adapter, device=device, timeout_ms=timeout, artifact_base_dir=output_dir)
+                write_reports(result, output_dir)
+                signatures.append(result.determinism_signature)
+                run_ids.append(result.run_id)
+                if result.status != Status.OK:
+                    failures += 1
+            except Exception:
                 failures += 1
-        except Exception:
-            failures += 1
+    finally:
+        if runtime_state and runtime_state.get("started"):
+            try:
+                _stop_auto_started_appium(runtime_state)
+            except Exception as exc:
+                cleanup_error = exc
 
     score = determinism_check(signatures)
     pass_gate = score >= args.threshold and failures == 0
+
+    if cleanup_error is not None:
+        response = _envelope_fail(
+            command_id,
+            started_at,
+            ErrorCode.TARGET_ERROR,
+            "Benchmark completed but failed to stop auto-started Appium",
+            str(cleanup_error),
+            "Inspect .visor/appium logs and stop Appium manually",
+        )
+        response.data = {
+            "runs": args.runs,
+            "threshold": args.threshold,
+            "determinismScore": score,
+            "pass": False,
+            "failures": failures,
+            "runIds": run_ids,
+        }
+        print(json.dumps(asdict(response), indent=2))
+        return 1
 
     response = _envelope_ok(command_id, started_at, next_action="report")
     response.data = {
@@ -232,7 +361,23 @@ def cmd_report(args) -> int:
 def cmd_action(command: str, args) -> int:
     command_id = make_id("cmd")
     started_at = utc_now_iso()
+    runtime_state = None
+    cleanup_error = None
+    payload = {}
+    artifacts = []
+    action_error = None
+    adapter = None
     try:
+        if not args.mock:
+            runtime_state = _ensure_non_mock_runtime(
+                args.platform,
+                args.device or ("emulator-5554" if args.platform == "android" else "iPhone 17 Pro"),
+                args.server_url,
+                not bool(getattr(args, "no_auto_start_appium", False)),
+                getattr(args, "appium_cmd", None),
+                float(getattr(args, "startup_timeout", DEFAULT_STARTUP_TIMEOUT_SECONDS)),
+            )
+
         adapter = get_adapter(
             args.platform,
             server_url=args.server_url,
@@ -241,42 +386,135 @@ def cmd_action(command: str, args) -> int:
             app_id=args.app_id,
             attach_to_running=args.attach,
         )
-        fn = getattr(adapter, command)
-        payload = fn(
-            {
-                k: v
-                for k, v in vars(args).items()
-                if k
-                not in {
-                    "command",
-                    "platform",
-                    "format",
-                    "output",
-                    "timeout",
-                    "verbose",
-                    "func",
-                    "server_url",
-                    "device",
-                    "mock",
-                    "seed",
-                    "app_id",
-                    "attach",
+    except Exception as exc:
+        action_error = exc
+    else:
+        try:
+            fn = getattr(adapter, command)
+            payload = fn(
+                {
+                    k: v
+                    for k, v in vars(args).items()
+                    if k
+                    not in {
+                        "command",
+                        "platform",
+                        "format",
+                        "output",
+                        "timeout",
+                        "verbose",
+                        "func",
+                        "server_url",
+                        "device",
+                        "mock",
+                        "seed",
+                        "app_id",
+                        "attach",
+                        "appium_cmd",
+                        "startup_timeout",
+                        "no_auto_start_appium",
+                    }
+                    and v is not None
                 }
-                and v is not None
-            }
-        )
-        adapter.close()
-        artifacts = []
+            )
+        except Exception as exc:
+            action_error = exc
+        finally:
+            adapter.close()
+
         if isinstance(payload, dict):
             maybe_path = payload.get("args", {}).get("path")
             if maybe_path:
                 artifacts.append(maybe_path)
-        response = _envelope_ok(command_id, started_at, artifacts=artifacts, next_action="run")
-        response.data = payload
+    finally:
+        if runtime_state and runtime_state.get("started"):
+            try:
+                _stop_auto_started_appium(runtime_state)
+            except Exception as exc:
+                cleanup_error = exc
+
+    if action_error is not None:
+        cause = str(action_error)
+        if cleanup_error is not None:
+            cause = f"{cause}; additionally failed to stop auto-started Appium: {cleanup_error}"
+        response = _envelope_fail(command_id, started_at, ErrorCode.ACTION_ERROR, f"{command} failed", cause, "Check command args and retry")
+        response.data = payload if isinstance(payload, dict) else {}
+        print(json.dumps(asdict(response), indent=2))
+        return 1
+
+    if cleanup_error is not None:
+        response = _envelope_fail(
+            command_id,
+            started_at,
+            ErrorCode.TARGET_ERROR,
+            f"{command} completed but failed to stop auto-started Appium",
+            str(cleanup_error),
+            "Inspect .visor/appium logs and stop Appium manually",
+        )
+        response.data = payload if isinstance(payload, dict) else {}
+        print(json.dumps(asdict(response), indent=2))
+        return 1
+
+    response = _envelope_ok(command_id, started_at, artifacts=artifacts, next_action="run")
+    response.data = payload
+    print(json.dumps(asdict(response), indent=2))
+    return 0
+
+
+def cmd_start(args) -> int:
+    command_id = make_id("cmd")
+    started_at = utc_now_iso()
+    try:
+        status = start_managed_appium(
+            server_url=args.server_url,
+            appium_cmd=args.appium_cmd,
+            startup_timeout_s=args.startup_timeout,
+        )
+        response = _envelope_ok(command_id, started_at, next_action="run")
+        response.data = status
         print(json.dumps(asdict(response), indent=2))
         return 0
     except Exception as exc:
-        response = _envelope_fail(command_id, started_at, ErrorCode.ACTION_ERROR, f"{command} failed", str(exc), "Check command args and retry")
+        response = _envelope_fail(
+            command_id,
+            started_at,
+            ErrorCode.TARGET_ERROR,
+            "Failed to start Appium",
+            str(exc),
+            "Install Appium, check --appium-cmd, and inspect .visor/appium/*.log",
+        )
+        print(json.dumps(asdict(response), indent=2))
+        return 1
+
+
+def cmd_status(args) -> int:
+    command_id = make_id("cmd")
+    started_at = utc_now_iso()
+    status = status_managed_appium(server_url=args.server_url)
+    response = _envelope_ok(command_id, started_at, next_action="run" if status["reachable"] else "start")
+    response.data = status
+    print(json.dumps(asdict(response), indent=2))
+    return 0
+
+
+def cmd_stop(args) -> int:
+    command_id = make_id("cmd")
+    started_at = utc_now_iso()
+    try:
+        result = stop_managed_appium(server_url=args.server_url, force=bool(args.force))
+        response = _envelope_ok(command_id, started_at, next_action="none")
+        response.data = result
+        print(json.dumps(asdict(response), indent=2))
+        return 0
+    except Exception as exc:
+        response = _envelope_fail(
+            command_id,
+            started_at,
+            ErrorCode.TARGET_ERROR,
+            "Failed to stop managed Appium",
+            str(exc),
+            "Retry with --force or check process state manually",
+        )
         print(json.dumps(asdict(response), indent=2))
         return 1
 
@@ -291,6 +529,9 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--seed", type=int)
     p.add_argument("--server-url", default=DEFAULT_SERVER_URL)
     p.add_argument("--app-id", default=None)
+    p.add_argument("--appium-cmd", default=None)
+    p.add_argument("--startup-timeout", type=float, default=DEFAULT_STARTUP_TIMEOUT_SECONDS)
+    p.add_argument("--no-auto-start-appium", action="store_true")
     p.add_argument("--attach", action="store_true")
     p.add_argument("--mock", action="store_true")
     p.add_argument("--verbose", action="store_true")
@@ -303,6 +544,9 @@ def build_parser() -> argparse.ArgumentParser:
         sp.add_argument("--device", default=None)
         sp.add_argument("--server-url", default=DEFAULT_SERVER_URL)
         sp.add_argument("--app-id", default=None)
+        sp.add_argument("--appium-cmd", default=None)
+        sp.add_argument("--startup-timeout", type=float, default=DEFAULT_STARTUP_TIMEOUT_SECONDS)
+        sp.add_argument("--no-auto-start-appium", action="store_true")
         sp.add_argument("--attach", action="store_true")
         sp.add_argument("--format", choices=["text", "json"], default="json")
         sp.add_argument("--mock", action="store_true")
@@ -340,6 +584,9 @@ def build_parser() -> argparse.ArgumentParser:
     spr.add_argument("--format", choices=["text", "json"], default="json")
     spr.add_argument("--server-url", default=DEFAULT_SERVER_URL)
     spr.add_argument("--app-id")
+    spr.add_argument("--appium-cmd")
+    spr.add_argument("--startup-timeout", type=float, default=DEFAULT_STARTUP_TIMEOUT_SECONDS)
+    spr.add_argument("--no-auto-start-appium", action="store_true")
     spr.add_argument("--attach", action="store_true")
     spr.add_argument("--mock", action="store_true")
     spr.set_defaults(func=cmd_run)
@@ -355,6 +602,9 @@ def build_parser() -> argparse.ArgumentParser:
     spb.add_argument("--format", choices=["text", "json"], default="json")
     spb.add_argument("--server-url", default=DEFAULT_SERVER_URL)
     spb.add_argument("--app-id")
+    spb.add_argument("--appium-cmd")
+    spb.add_argument("--startup-timeout", type=float, default=DEFAULT_STARTUP_TIMEOUT_SECONDS)
+    spb.add_argument("--no-auto-start-appium", action="store_true")
     spb.add_argument("--attach", action="store_true")
     spb.add_argument("--mock", action="store_true")
     spb.set_defaults(func=cmd_benchmark)
@@ -363,6 +613,24 @@ def build_parser() -> argparse.ArgumentParser:
     spp.add_argument("path", nargs="?", default="artifacts")
     spp.add_argument("--format", choices=["text", "json"], default="json")
     spp.set_defaults(func=cmd_report)
+
+    sps = sub.add_parser("start")
+    sps.add_argument("--server-url", default=DEFAULT_SERVER_URL)
+    sps.add_argument("--appium-cmd")
+    sps.add_argument("--startup-timeout", type=float, default=DEFAULT_STARTUP_TIMEOUT_SECONDS)
+    sps.add_argument("--format", choices=["text", "json"], default="json")
+    sps.set_defaults(func=cmd_start)
+
+    spt = sub.add_parser("status")
+    spt.add_argument("--server-url", default=DEFAULT_SERVER_URL)
+    spt.add_argument("--format", choices=["text", "json"], default="json")
+    spt.set_defaults(func=cmd_status)
+
+    spx = sub.add_parser("stop")
+    spx.add_argument("--server-url", default=DEFAULT_SERVER_URL)
+    spx.add_argument("--force", action="store_true")
+    spx.add_argument("--format", choices=["text", "json"], default="json")
+    spx.set_defaults(func=cmd_stop)
 
     return p
 

@@ -18,6 +18,9 @@ These inputs are accepted globally and, where relevant, by individual commands.
 | `format` | `text` or `json` |
 | `server-url` | Appium server URL |
 | `app-id` | App package or bundle identifier |
+| `appium-cmd` | Override command used to launch Appium |
+| `startup-timeout` | Seconds to wait for Appium to become reachable after startup |
+| `no-auto-start-appium` | Disable auto-start and fail if Appium is unreachable |
 | `attach` | Attach to an already running app process when possible |
 | `mock` | Use mock runtime instead of a real device |
 
@@ -126,6 +129,8 @@ Returns action payload fields:
 - `args.format`
 - `args.bytes`
 
+For direct action commands, if Appium is auto-started for the command, Visor stops that managed Appium process before returning.
+
 ## Scenario commands
 
 ### `validate`
@@ -162,6 +167,9 @@ Optional runtime inputs:
 - `output`
 - `server-url`
 - `app-id`
+- `appium-cmd`
+- `startup-timeout`
+- `no-auto-start-appium`
 - `attach`
 - `mock`
 
@@ -171,6 +179,8 @@ Response data fields:
 - `warnings`
 
 The `run` object contains the full run result, including step results, assertion results, artifacts, determinism signature, and run-level error data.
+
+If Appium is auto-started for this command, Visor stops that managed Appium process before returning.
 
 ### `benchmark`
 
@@ -195,6 +205,8 @@ Response data fields:
 - `failures`
 - `runIds`
 
+If Appium is auto-started for this command, Visor stops that managed Appium process before returning.
+
 ### `report`
 
 Purpose: return guidance about where run reports are stored.
@@ -208,6 +220,68 @@ Response data fields:
 - `message`
 - `path`
 - `format`
+
+## Appium lifecycle commands
+
+### `start`
+
+Purpose: start Appium when unreachable or return current reachable status.
+
+Optional inputs:
+
+- `server-url`
+- `appium-cmd`
+- `startup-timeout`
+
+Response data fields:
+
+- `serverUrl`
+- `reachable`
+- `managed`
+- `pid`
+- `command`
+- `metadataPath`
+- `logPath`
+- `started`
+- `alreadyRunning`
+
+### `status`
+
+Purpose: report whether Appium is reachable and whether it is managed by Visor.
+
+Optional inputs:
+
+- `server-url`
+
+Response data fields:
+
+- `serverUrl`
+- `reachable`
+- `managed`
+- `pid`
+- `command`
+- `metadataPath`
+- `logPath`
+
+### `stop`
+
+Purpose: stop a Visor-managed Appium process for the given server URL.
+
+Optional inputs:
+
+- `server-url`
+- `force`
+
+Response data fields:
+
+- `serverUrl`
+- `stopped`
+- `managed`
+- `reason`
+- `pid`
+- `reachable`
+- `metadataPath`
+- `logPath`
 
 ## Response envelope behavior
 

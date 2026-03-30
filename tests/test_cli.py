@@ -143,6 +143,160 @@ class CliTests(unittest.TestCase):
         self.assertEqual(code, 0)
         self.assertTrue(get_adapter_mock.call_args.kwargs["attach_to_running"])
 
+    def test_cmd_run_non_mock_uses_auto_start_guard_by_default(self):
+        parser = cli.build_parser()
+        args = parser.parse_args(
+            [
+                "run",
+                "scenarios/checkout-smoke.json",
+                "--output",
+                "artifacts-test",
+            ]
+        )
+
+        with patch("visor.cli._ensure_non_mock_runtime") as ensure_mock, patch("visor.cli.get_adapter") as get_adapter_mock:
+            ensure_mock.return_value = {"serverUrl": "http://127.0.0.1:4723", "started": False}
+            get_adapter_mock.return_value = MockAdapter("android")
+            code = cli.cmd_run(args)
+
+        self.assertEqual(code, 0)
+        self.assertTrue(ensure_mock.called)
+        self.assertEqual(get_adapter_mock.call_args.kwargs["use_mock"], False)
+
+    def test_cmd_run_respects_no_auto_start_flag(self):
+        parser = cli.build_parser()
+        args = parser.parse_args(
+            [
+                "run",
+                "scenarios/checkout-smoke.json",
+                "--output",
+                "artifacts-test",
+                "--no-auto-start-appium",
+            ]
+        )
+
+        with patch("visor.cli._ensure_non_mock_runtime") as ensure_mock, patch("visor.cli.get_adapter") as get_adapter_mock:
+            ensure_mock.return_value = {"serverUrl": "http://127.0.0.1:4723", "started": False}
+            get_adapter_mock.return_value = MockAdapter("android")
+            code = cli.cmd_run(args)
+
+        self.assertEqual(code, 0)
+        self.assertTrue(ensure_mock.called)
+        self.assertEqual(ensure_mock.call_args.args[3], False)
+
+    def test_cmd_run_stops_auto_started_appium(self):
+        parser = cli.build_parser()
+        args = parser.parse_args(
+            [
+                "run",
+                "scenarios/checkout-smoke.json",
+                "--output",
+                "artifacts-test",
+            ]
+        )
+
+        with patch("visor.cli._ensure_non_mock_runtime") as ensure_mock, patch("visor.cli.stop_managed_appium") as stop_mock, patch(
+            "visor.cli.get_adapter"
+        ) as get_adapter_mock:
+            ensure_mock.return_value = {"serverUrl": "http://127.0.0.1:4723", "started": True}
+            stop_mock.return_value = {"stopped": True}
+            get_adapter_mock.return_value = MockAdapter("android")
+            code = cli.cmd_run(args)
+
+        self.assertEqual(code, 0)
+        self.assertTrue(stop_mock.called)
+
+    def test_cmd_benchmark_stops_auto_started_appium(self):
+        parser = cli.build_parser()
+        args = parser.parse_args(
+            [
+                "benchmark",
+                "scenarios/checkout-smoke.json",
+                "--runs",
+                "2",
+            ]
+        )
+
+        with patch("visor.cli._ensure_non_mock_runtime") as ensure_mock, patch("visor.cli.stop_managed_appium") as stop_mock, patch(
+            "visor.cli.get_adapter"
+        ) as get_adapter_mock:
+            ensure_mock.return_value = {"serverUrl": "http://127.0.0.1:4723", "started": True}
+            stop_mock.return_value = {"stopped": True}
+            get_adapter_mock.return_value = MockAdapter("android")
+            code = cli.cmd_benchmark(args)
+
+        self.assertIn(code, (0, 3))
+        self.assertTrue(stop_mock.called)
+
+    def test_cmd_action_stops_auto_started_appium(self):
+        parser = cli.build_parser()
+        args = parser.parse_args(
+            [
+                "wait",
+                "--platform",
+                "android",
+                "--ms",
+                "1",
+            ]
+        )
+
+        with patch("visor.cli._ensure_non_mock_runtime") as ensure_mock, patch("visor.cli.stop_managed_appium") as stop_mock, patch(
+            "visor.cli.get_adapter"
+        ) as get_adapter_mock:
+            ensure_mock.return_value = {"serverUrl": "http://127.0.0.1:4723", "started": True}
+            stop_mock.return_value = {"stopped": True}
+            get_adapter_mock.return_value = MockAdapter("android")
+            code = cli.cmd_action("wait", args)
+
+        self.assertEqual(code, 0)
+        self.assertTrue(stop_mock.called)
+
+    def test_start_command_calls_lifecycle_manager(self):
+        parser = cli.build_parser()
+        args = parser.parse_args(["start", "--server-url", "http://127.0.0.1:4723"])
+
+        with patch("visor.cli.start_managed_appium") as start_mock:
+            start_mock.return_value = {
+                "serverUrl": "http://127.0.0.1:4723",
+                "reachable": True,
+                "managed": True,
+                "pid": 12345,
+            }
+            code = cli.cmd_start(args)
+
+        self.assertEqual(code, 0)
+        self.assertTrue(start_mock.called)
+
+    def test_status_command_calls_lifecycle_manager(self):
+        parser = cli.build_parser()
+        args = parser.parse_args(["status", "--server-url", "http://127.0.0.1:4723"])
+
+        with patch("visor.cli.status_managed_appium") as status_mock:
+            status_mock.return_value = {
+                "serverUrl": "http://127.0.0.1:4723",
+                "reachable": False,
+                "managed": False,
+            }
+            code = cli.cmd_status(args)
+
+        self.assertEqual(code, 0)
+        self.assertTrue(status_mock.called)
+
+    def test_stop_command_calls_lifecycle_manager(self):
+        parser = cli.build_parser()
+        args = parser.parse_args(["stop", "--server-url", "http://127.0.0.1:4723"])
+
+        with patch("visor.cli.stop_managed_appium") as stop_mock:
+            stop_mock.return_value = {
+                "serverUrl": "http://127.0.0.1:4723",
+                "stopped": True,
+                "managed": True,
+            }
+            code = cli.cmd_stop(args)
+
+        self.assertEqual(code, 0)
+        self.assertTrue(stop_mock.called)
+
     def test_wait_command_succeeds_in_mock(self):
         code, out, _ = run_cmd(["wait", "--platform", "android", "--mock", "--ms", "10"])
         self.assertEqual(code, 0)
