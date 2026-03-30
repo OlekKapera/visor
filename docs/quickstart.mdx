@@ -1,80 +1,155 @@
 ---
-title: "Quickstart"
-description: "Start building awesome documentation in minutes"
+title: "Getting started"
+description: "Install Visor, check the local requirements, and run your first command."
 ---
 
-## Get started in three steps
+Use this guide to install Visor from PyPI, confirm the CLI works, and then run a minimal scenario before you connect to a real mobile runtime.
 
-Get your documentation site running locally and make your first customization.
+## Requirements
 
-### Step 1: Set up your local environment
+Before you install Visor, make sure you have:
 
-<AccordionGroup>
-  <Accordion icon="copy" title="Clone your docs locally">
-    During the onboarding process, you created a GitHub repository with your docs content if you didn't already have one. You can find a link to this repository in your [dashboard](https://dashboard.mintlify.com).
-    
-    To clone the repository locally so that you can make and preview changes to your docs, follow the [Cloning a repository](https://docs.github.com/en/repositories/creating-and-managing-repositories/cloning-a-repository) guide in the GitHub docs.
-  </Accordion>
-  <Accordion icon="rectangle-terminal" title="Start the preview server">
-    1. Install the Mintlify CLI: `npm i -g mint`
-    2. Navigate to your docs directory and run: `mint dev`
-    3. Open `http://localhost:3000` to see your docs live!
-    
-    <Tip>Your preview updates automatically as you edit files.</Tip>
-  </Accordion>
-</AccordionGroup>
+- Python `3.10` or later
+- `pip`
 
-### Step 2: Deploy your changes
+For your first run, you can use mock mode. Mock mode does not require Appium, a simulator, or a device.
 
-<AccordionGroup>
-  <Accordion icon="github" title="Install our GitHub app">
-    Install the Mintlify GitHub app from your [dashboard](https://dashboard.mintlify.com/settings/organization/github-app).
-    
-    Our GitHub app automatically deploys your changes to your docs site, so you don't need to manage deployments yourself.
-</Accordion>
-<Accordion icon="palette" title="Update your site name and colors">
-    For a first change, let's update the name and colors of your docs site.
+For real mobile runs, you also need:
 
-    1. Open `docs.json` in your editor.
-    2. Change the `"name"` field to your project name.
-    3. Update the `"colors"` to match your brand.
-    4. Save and see your changes instantly at `http://localhost:3000`.
+- a reachable Appium server, or permission for Visor to auto-start one
+- a booted Android emulator or device, or an iOS simulator or device
+- the app identifier for the app you want Visor to launch or attach to
 
-    <Tip>Try changing the primary color to see an immediate difference!</Tip>
-  </Accordion>
-</AccordionGroup>
+## Install Visor
 
-### Step 3: Go live
+<Steps>
+  <Step title="Create and activate a virtual environment">
 
-<Accordion icon="rocket" title="Publish your docs">
-  1. Commit and push your changes.
-  2. Your docs will update and be live in moments!
-</Accordion>
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+```
+
+  </Step>
+  <Step title="Install Visor from PyPI">
+
+```bash
+python3 -m pip install --upgrade pip
+python3 -m pip install visor-ai
+```
+
+This installs the `visor` CLI entry point and the runtime dependencies published with the `visor-ai` package.
+
+  </Step>
+  <Step title="Confirm the CLI is available">
+
+```bash
+visor --help
+```
+
+If your shell does not resolve `visor` yet, run `python3 -m visor --help` instead.
+
+  </Step>
+</Steps>
+
+## Run your first command
+
+Create a minimal scenario file named `checkout-smoke.json`:
+
+```json
+{
+  "meta": {
+    "name": "checkout-smoke",
+    "version": "1",
+    "platform": "android"
+  },
+  "config": {
+    "timeoutMs": 15000,
+    "seed": 42,
+    "artifactsDir": "./artifacts"
+  },
+  "steps": [
+    {
+      "id": "s1",
+      "command": "screenshot",
+      "args": {
+        "label": "app-opened"
+      }
+    }
+  ],
+  "assertions": [],
+  "output": {
+    "report": ["summary", "json", "junit", "html"]
+  }
+}
+```
+
+Then validate it with:
+
+```bash
+visor validate checkout-smoke.json
+```
+
+Expected result:
+
+- the top-level `status` is `ok`
+- `data.valid` is `true`
+- `data.issues` is an empty list
+
+This verifies that your installation works and that Visor can parse the scenario correctly.
+
+## Run your first scenario
+
+Once validation passes, execute the same scenario in mock mode:
+
+```bash
+visor run checkout-smoke.json --mock --output artifacts-test
+```
+
+Mock mode is the safest first run because it produces deterministic output without depending on Appium or mobile device setup.
+
+Visor writes a run directory under `artifacts-test/<run-id>/` with files such as:
+
+- `summary.txt`
+- `summary.json`
+- `junit.xml`
+- `timeline.log`
+- `report.html`
+- copied artifacts under `screenshots/` and `sources/`
+
+## Move to a real runtime
+
+When you are ready to run against an actual app, keep the same scenario command shape and add your runtime inputs:
+
+```bash
+visor run checkout-smoke.json \
+  --platform android \
+  --device emulator-5554 \
+  --app-id com.example.app
+```
+
+If Appium is not already reachable, Visor attempts to start it unless you pass `--no-auto-start-appium`.
+
+<Warning>
+Real runtime execution requires a booted device target and a working Appium environment. If you only want to verify the CLI and report flow, stay in `--mock` mode first.
+</Warning>
 
 ## Next steps
 
-Now that you have your docs running, explore these key features:
-
 <CardGroup cols={2}>
+  <Card title="Platforms and runtime" icon="smartphone" href="/platforms-and-runtime">
+    Review runtime defaults, Appium lifecycle behavior, and environment variables.
+  </Card>
 
-<Card title="Write Content" icon="pen-to-square" href="/essentials/markdown">
-  Learn MDX syntax and start writing your documentation.
-</Card>
+  <Card title="Scenarios" icon="list-checks" href="/features/scenarios">
+    Learn how scenario files are structured and how Visor validates them.
+  </Card>
 
-<Card title="Customize style" icon="palette" href="/essentials/settings">
-  Make your docs match your brand perfectly.
-</Card>
+  <Card title="Artifacts and reports" icon="folder-open" href="/features/artifacts-and-reports">
+    See exactly which files Visor writes after each run.
+  </Card>
 
-<Card title="Add code examples" icon="square-code" href="/essentials/code">
-  Include syntax-highlighted code blocks.
-</Card>
-
-<Card title="API documentation" icon="code" href="/api-reference/introduction">
-  Auto-generate API docs from OpenAPI specs.
-</Card>
-
+  <Card title="Command reference" icon="terminal" href="/reference/command-reference">
+    Inspect every command, flag, and response field.
+  </Card>
 </CardGroup>
-
-<Note>
-  **Need help?** See our [full documentation](https://mintlify.com/docs) or join our [community](https://mintlify.com/community).
-</Note>

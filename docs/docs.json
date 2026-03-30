@@ -17,6 +17,7 @@
             "group": "Product",
             "pages": [
               "index",
+              "quickstart",
               "concepts",
               "platforms-and-runtime"
             ]
