@@ -48,6 +48,12 @@ interface RuntimeOptions {
   startup_timeout: number;
 }
 
+interface HelpData {
+  usageText: string;
+  commands: string[];
+  examples: string[];
+}
+
 const ACTION_COMMANDS = new Set<CommandName>([
   'tap',
   'navigate',
@@ -153,6 +159,31 @@ const COMMAND_SPECS: Record<string, Record<string, OptionType>> = {
   wait: ACTION_SPEC,
   source: ACTION_SPEC
 };
+
+function helpText(): string {
+  return [
+    'Visor TypeScript CLI',
+    '',
+    'Usage:',
+    '  visor <command> [options]',
+    '  visor --help',
+    '',
+    'Commands:',
+    '  validate <scenario>',
+    '  run <scenario> [--mock] [--output <dir>]',
+    '  benchmark <scenario> [--runs <n>] [--threshold <percent>]',
+    '  report [path]',
+    '  start [--server-url <url>]',
+    '  status [--server-url <url>]',
+    '  stop [--server-url <url>] [--force]',
+    '  tap|navigate|act|screenshot|wait|source',
+    '',
+    'Examples:',
+    '  visor validate scenarios/checkout-smoke.json',
+    '  visor run scenarios/checkout-smoke.json --mock --output artifacts-test',
+    '  node dist/main.js status'
+  ].join('\n');
+}
 
 function envelopeOk(
   commandId: string,
@@ -337,6 +368,22 @@ function actionArgs(command: CommandName, options: ParsedOptions): Record<string
   }
 
   return args;
+}
+
+function cmdHelp(): CommandResult {
+  const commandId = makeId('cmd');
+  const startedAt = utcNowIso();
+  const response = envelopeOk(commandId, startedAt, [], 'validate');
+  response.data = {
+    usageText: helpText(),
+    commands: Array.from(ALL_COMMANDS),
+    examples: [
+      'visor validate scenarios/checkout-smoke.json',
+      'visor run scenarios/checkout-smoke.json --mock --output artifacts-test',
+      'node dist/main.js status'
+    ]
+  } satisfies HelpData;
+  return { code: 0, response };
 }
 
 export async function cmdValidate(parsed: ParsedCommand): Promise<CommandResult> {
@@ -760,6 +807,15 @@ export async function cmdStop(parsed: ParsedCommand): Promise<CommandResult> {
 }
 
 export async function executeCommand(argv: string[]): Promise<CommandResult> {
+  if (
+    argv.length === 0 ||
+    argv[0] === 'help' ||
+    argv.includes('--help') ||
+    argv.includes('-h')
+  ) {
+    return cmdHelp();
+  }
+
   const parsed = parseCommand(argv);
 
   if (parsed.command === 'validate') {

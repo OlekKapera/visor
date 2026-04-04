@@ -1,6 +1,6 @@
 # Visor
 
-Visor gives AI agents verified visibility into running mobile apps.
+Visor is a TypeScript CLI for verified interaction with running mobile apps.
 
 Instead of inferring UI behavior from code alone, Visor captures evidence from the live app: interactions, screenshots, UI source, assertions, and run artifacts.
 
@@ -30,6 +30,25 @@ Supported today:
 - iOS
 - real Appium-backed runs
 - mock runs for predictable dry-run behavior
+
+## Install
+
+Visor ships as the npm package `visor-ai` and requires Node `20` or later.
+
+For a published install:
+
+```bash
+npm install -g visor-ai
+visor --help
+```
+
+For a source checkout:
+
+```bash
+npm install
+npm run build
+node dist/main.js --help
+```
 
 ## Documentation
 

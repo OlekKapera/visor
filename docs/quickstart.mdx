@@ -3,14 +3,14 @@ title: "Getting started"
 description: "Install Visor, check the local requirements, and run your first command."
 ---
 
-Use this guide to install Visor from PyPI, confirm the CLI works, and then run a minimal scenario before you connect to a real mobile runtime.
+Use this guide to install the TypeScript CLI, confirm it works, and then run a minimal scenario before you connect to a real mobile runtime.
 
 ## Requirements
 
 Before you install Visor, make sure you have:
 
-- Python `3.10` or later
-- `pip`
+- Node.js `20` or later
+- `npm`
 
 For your first run, you can use mock mode. Mock mode does not require Appium, a simulator, or a device.
 
@@ -23,22 +23,11 @@ For real mobile runs, you also need:
 ## Install Visor
 
 <Steps>
-  <Step title="Create and activate a virtual environment">
+  <Step title="Install Visor from npm">
 
 ```bash
-python3 -m venv .venv
-source .venv/bin/activate
+npm install -g visor-ai
 ```
-
-  </Step>
-  <Step title="Install Visor from PyPI">
-
-```bash
-python3 -m pip install --upgrade pip
-python3 -m pip install visor-ai
-```
-
-This installs the `visor` CLI entry point and the runtime dependencies published with the `visor-ai` package.
 
   </Step>
   <Step title="Confirm the CLI is available">
@@ -47,7 +36,16 @@ This installs the `visor` CLI entry point and the runtime dependencies published
 visor --help
 ```
 
-If your shell does not resolve `visor` yet, run `python3 -m visor --help` instead.
+This installs the `visor` CLI entry point and the runtime dependencies published with the `visor-ai` package.
+
+  </Step>
+  <Step title="Alternative: run from a source checkout">
+
+```bash
+npm install
+npm run build
+node dist/main.js --help
+```
 
   </Step>
 </Steps>
@@ -89,6 +87,8 @@ Then validate it with:
 ```bash
 visor validate checkout-smoke.json
 ```
+
+If you are running from a source checkout instead of a global install, replace `visor` with `node dist/main.js`.
 
 Expected result:
 

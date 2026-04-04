@@ -4,10 +4,23 @@ import { executeCommand } from './cli.js';
 import { makeError } from './errors.js';
 import { makeId, utcNowIso } from './utils.js';
 
+function isHelpData(value: unknown): value is { usageText: string } {
+  return Boolean(
+    value &&
+      typeof value === 'object' &&
+      'usageText' in value &&
+      typeof (value as { usageText: unknown }).usageText === 'string'
+  );
+}
+
 async function main(argv = process.argv.slice(2)): Promise<number> {
   try {
     const result = await executeCommand(argv);
-    console.log(JSON.stringify(result.response, null, 2));
+    if (isHelpData(result.response.data)) {
+      console.log(result.response.data.usageText);
+    } else {
+      console.log(JSON.stringify(result.response, null, 2));
+    }
     return result.code;
   } catch (error) {
     const startedAt = utcNowIso();

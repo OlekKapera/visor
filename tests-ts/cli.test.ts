@@ -13,6 +13,22 @@ function responseData<T>(value: unknown): T {
 }
 
 describe('typescript cli', () => {
+  it('returns help for --help', async () => {
+    const result = await executeCommand(['--help']);
+    const data = responseData<{ usageText: string; commands: string[] }>(result.response.data);
+    expect(result.code).toBe(0);
+    expect(result.response.status).toBe('ok');
+    expect(data.usageText).toContain('Visor TypeScript CLI');
+    expect(data.commands).toContain('run');
+  });
+
+  it('returns help when no command is provided', async () => {
+    const result = await executeCommand([]);
+    const data = responseData<{ usageText: string }>(result.response.data);
+    expect(result.code).toBe(0);
+    expect(data.usageText).toContain('Usage:');
+  });
+
   it('validates a good scenario', async () => {
     const result = await executeCommand(['validate', 'scenarios/checkout-smoke.json']);
     expect(result.code).toBe(0);

@@ -1,2 +1,0 @@
-Appium-Python-Client==5.2.7
-selenium==4.41.0
