@@ -3,7 +3,9 @@ title: "Response schema"
 description: "Reference the JSON envelope, run result structure, step result structure, and assertion result objects returned by Visor."
 ---
 
-Visor currently returns JSON envelopes for every command.
+Visor returns a structured JSON envelope for normal commands.
+
+If you run `visor --help` or invoke the CLI with no command, the CLI prints a plain-text usage summary instead.
 
 ## Top-level envelope
 
@@ -15,7 +17,7 @@ Visor currently returns JSON envelopes for every command.
 | `ended_at` | string | UTC timestamp |
 | `artifacts` | array of string | Artifact paths associated with the response |
 | `next_action` | string | Hint for the next logical operation |
-| `error` | object or null | Present on failure |
+| `error` | object | Present only on failure |
 | `data` | object | Command-specific payload |
 
 ## Error payload
@@ -43,8 +45,8 @@ When a scenario run succeeds or fails, `data.run` contains a run result.
 | `assertions` | array | Assertion results |
 | `artifacts` | array of string | Final copied artifact paths |
 | `determinism_signature` | string | SHA-256 signature of normalized run data |
-| `seed` | number or null | Scenario seed if provided |
-| `error` | object or null | Run-level error payload |
+| `seed` | number | Present when the scenario provides a seed |
+| `error` | object | Present when the run failed |
 
 ## Step result
 
@@ -55,7 +57,7 @@ When a scenario run succeeds or fails, `data.run` contains a run result.
 | `status` | string | `ok` or `fail` |
 | `duration_ms` | number | Step duration |
 | `details` | object | Adapter-returned payload |
-| `error` | object or null | Present when the step failed |
+| `error` | object | Present when the step failed |
 
 ## Assertion result
 
@@ -81,6 +83,7 @@ Benchmark responses store their command-specific payload in `data`.
 | `pass` | boolean | Whether the benchmark passed |
 | `failures` | number | Count of failed iterations |
 | `runIds` | array of string | Run ids created during the benchmark |
+| `warnings` | array | Validation warnings carried through from scenario parsing |
 
 ## Validation payload
 
@@ -90,6 +93,11 @@ Validation responses use this `data` structure:
 | --- | --- | --- |
 | `valid` | boolean | Whether the scenario passed validation |
 | `issues` | array | Validation errors and warnings |
+
+Important behavior:
+
+- schema-invalid scenarios return `status: "ok"` with `data.valid: false` and a non-zero process exit code
+- malformed JSON or unreadable files return a failure envelope with `status: "fail"`
 
 Each issue contains:
 
@@ -110,7 +118,6 @@ Each issue contains:
     "artifacts/run_123/screenshots/001-app-opened.png"
   ],
   "next_action": "report",
-  "error": null,
   "data": {
     "run": {
       "run_id": "run_123456789abc",
@@ -123,8 +130,7 @@ Each issue contains:
       "assertions": [],
       "artifacts": [],
       "determinism_signature": "...",
-      "seed": 42,
-      "error": null
+      "seed": 42
     },
     "warnings": []
   }

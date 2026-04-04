@@ -74,12 +74,14 @@ Examples of validation errors:
 - `navigate` omits `to`
 - `wait` omits `ms`
 - `meta.platform` is not `ios` or `android`
-- unknown fields at any validated level
+- unknown fields in validated objects such as the top level, `meta`, `config`, each step object, each assertion object, and `output`
 
 Examples of validation warnings:
 
 - `config.seed` is missing
 - `screenshot` step is missing a label
+
+The `output.report` field is accepted for scenario shape compatibility, but the current report writer does not change behavior based on its contents.
 
 If validation produces any error-level issue, the scenario is rejected.
 

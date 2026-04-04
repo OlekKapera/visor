@@ -80,7 +80,16 @@ Visor reads runtime configuration from environment variables when explicit runti
 | `VISOR_ATTACH_TO_RUNNING` | Reuse running app process (`true`/`1`/`yes`/`on`) |
 | `VISOR_APPIUM_CMD` | Command Visor uses when it needs to launch Appium |
 
-Legacy `PATF_*` environment variable names are also accepted as fallbacks.
+Legacy `PATF_*` fallbacks are only supported for the mobile runtime variables implemented in the adapter layer:
+
+- `PATF_ANDROID_APP_PACKAGE`
+- `PATF_ANDROID_APP_ACTIVITY`
+- `PATF_ANDROID_DEVICE`
+- `PATF_IOS_BUNDLE_ID`
+- `PATF_IOS_DEVICE`
+- `PATF_ATTACH_TO_RUNNING`
+
+There is no `PATF_*` fallback for Appium command resolution.
 
 ## Runtime resolution order
 

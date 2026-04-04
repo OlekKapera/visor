@@ -26,7 +26,10 @@ These inputs are accepted globally and, where relevant, by individual commands.
 | `attach` | Attach to an already running app process when possible |
 | `mock` | Use mock runtime instead of a real device |
 
-Important note: the current implementation always emits a JSON response envelope, even when `format` is set to `text`.
+Important notes:
+
+- `format` is currently informational only for normal commands; the implementation still returns JSON envelopes
+- `visor --help` and no-command invocation print plain-text usage instead of JSON
 
 ## Direct action commands
 
@@ -65,6 +68,11 @@ Returns action payload fields:
 - `platform`
 - `args.to`
 
+Current behavior:
+
+- in the real Appium adapter, the destination is passed to WebdriverIO through `url(to)`
+- in mock mode, the destination is echoed back in the action payload
+
 ### `act`
 
 Purpose: perform a helper action.
@@ -84,7 +92,7 @@ Returns action payload fields:
 
 Purpose: capture a PNG image.
 
-Required input:
+Optional input:
 
 - `label`
 
@@ -97,6 +105,8 @@ Returns action payload fields:
 - `args.path`
 - `args.width`
 - `args.height`
+
+If `label` is omitted, the runtime defaults it to `capture`.
 
 ### `wait`
 
@@ -151,7 +161,8 @@ Response data fields:
 Exit behavior:
 
 - returns success when the scenario is valid
-- returns failure when parsing or validation fails
+- returns a non-zero exit code with `status: ok` when the scenario is syntactically valid JSON but fails schema validation
+- returns a failure envelope when parsing fails or the file cannot be read
 
 ### `run`
 
@@ -206,6 +217,7 @@ Response data fields:
 - `pass`
 - `failures`
 - `runIds`
+- `warnings`
 
 If Appium is auto-started for this command, Visor stops that managed Appium process before returning.
 
@@ -299,3 +311,5 @@ Every command returns the same top-level envelope fields:
 - `data`
 
 `next_action` is a hint, not an execution chain. Examples include `run`, `report`, and `none`.
+
+Help output is the exception: `visor --help` and no-command invocation print usage text instead of an envelope.
