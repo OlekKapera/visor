@@ -10,8 +10,16 @@
   "bin": {
     "visor": "./dist/main.js"
   },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
-    "build": "tsc -p tsconfig.json",
+    "build": "rm -rf dist && tsc -p tsconfig.json",
     "dev": "tsx src/main.ts",
     "test": "vitest run",
     "check": "npm run build && npm run test"

@@ -1,0 +1,111 @@
+name: npm Release
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: "Git ref to publish (tag, branch, or SHA). Defaults to current ref."
+        required: false
+        type: string
+
+concurrency:
+  group: npm-release-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-verify:
+    runs-on: ubuntu-latest
+    outputs:
+      package_version: ${{ steps.meta.outputs.package_version }}
+      package_filename: ${{ steps.pack.outputs.package_filename }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.ref || github.ref }}
+
+      - name: Set up Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          registry-url: https://registry.npmjs.org
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build package
+        run: npm run build
+
+      - name: Run test suite
+        run: npm test
+
+      - name: Read package version
+        id: meta
+        run: |
+          VERSION="$(node -p "require('./package.json').version")"
+          echo "package_version=${VERSION}" >> "${GITHUB_OUTPUT}"
+
+      - name: Ensure tag matches project version
+        if: github.event_name == 'push'
+        env:
+          TAG: ${{ github.ref_name }}
+          PACKAGE_VERSION: ${{ steps.meta.outputs.package_version }}
+        run: |
+          EXPECTED_TAG="v${PACKAGE_VERSION}"
+          if [ "${TAG}" != "${EXPECTED_TAG}" ]; then
+            echo "Tag/version mismatch: tag=${TAG}, expected=${EXPECTED_TAG}"
+            exit 1
+          fi
+
+      - name: Verify npm package shape
+        env:
+          npm_config_cache: ${{ runner.temp }}/npm-cache
+        run: npm pack --dry-run
+
+      - name: Create npm package tarball
+        id: pack
+        env:
+          npm_config_cache: ${{ runner.temp }}/npm-cache
+        run: |
+          PACKAGE_FILENAME="$(npm pack)"
+          echo "package_filename=${PACKAGE_FILENAME}" >> "${GITHUB_OUTPUT}"
+
+      - name: Upload npm package artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: npm-package
+          path: ${{ steps.pack.outputs.package_filename }}
+          if-no-files-found: error
+
+  publish-npm:
+    name: Publish to npm
+    needs: build-and-verify
+    runs-on: ubuntu-latest
+    environment:
+      name: npm
+    permissions:
+      contents: read
+    steps:
+      - name: Set up Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          registry-url: https://registry.npmjs.org
+
+      - name: Download npm package artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: npm-package
+          path: release-artifacts
+
+      - name: Publish package to npm
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: npm publish release-artifacts/${{ needs.build-and-verify.outputs.package_filename }} --access public
