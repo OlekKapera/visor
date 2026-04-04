@@ -1,5 +1,9 @@
 #!/usr/bin/env node
 
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
 import { executeCommand } from './cli.js';
 import { makeError } from './errors.js';
 import { makeId, utcNowIso } from './utils.js';
@@ -44,7 +48,21 @@ async function main(argv = process.argv.slice(2)): Promise<number> {
   }
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+function isDirectExecution(): boolean {
+  if (!process.argv[1]) {
+    return false;
+  }
+
+  try {
+    const currentModulePath = fs.realpathSync(fileURLToPath(import.meta.url));
+    const invokedPath = fs.realpathSync(path.resolve(process.argv[1]));
+    return currentModulePath === invokedPath;
+  } catch {
+    return false;
+  }
+}
+
+if (isDirectExecution()) {
   void main().then((code) => {
     process.exitCode = code;
   });

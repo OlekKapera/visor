@@ -35,31 +35,10 @@ Supported today:
 
 Visor ships as the npm package `visor-ai` and requires Node `20` or later.
 
-For a published install:
-
 ```bash
 npm install -g visor-ai
 visor --help
 ```
-
-For a source checkout:
-
-```bash
-npm install
-npm run build
-node dist/main.js --help
-```
-
-## Release automation
-
-GitHub Actions publishes tagged releases of `visor-ai` to the npm registry.
-
-Maintainer requirements:
-
-- repository secret `NPM_TOKEN`
-- release tags in the form `v<package.json version>`
-
-The release workflow verifies the package with `npm ci`, `npm run build`, `npm test`, and `npm pack --dry-run` before publishing.
 
 ## Documentation
 
