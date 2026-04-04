@@ -30,10 +30,10 @@ jobs:
         with:
           ref: ${{ github.event.inputs.ref || github.ref }}
 
-      - name: Set up Node.js 20
+      - name: Set up Node.js 24
         uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "24"
           cache: npm
           registry-url: https://registry.npmjs.org
 
@@ -92,11 +92,12 @@ jobs:
       name: npm
     permissions:
       contents: read
+      id-token: write
     steps:
-      - name: Set up Node.js 20
+      - name: Set up Node.js 24
         uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "24"
           registry-url: https://registry.npmjs.org
 
       - name: Download npm package artifact
@@ -105,7 +106,5 @@ jobs:
           name: npm-package
           path: release-artifacts
 
-      - name: Publish package to npm
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      - name: Publish package to npm with trusted publishing
         run: npm publish "./release-artifacts/${{ needs.build-and-verify.outputs.package_filename }}" --access public
