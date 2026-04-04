@@ -1,0 +1,38 @@
+{
+  "name": "visor-ai",
+  "version": "0.2.0",
+  "description": "Visor CLI for LLM-driven mobile app interaction and artifact capture",
+  "type": "module",
+  "license": "MIT",
+  "engines": {
+    "node": ">=20"
+  },
+  "bin": {
+    "visor": "./dist/main.js"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "dev": "tsx src/main.ts",
+    "test": "vitest run",
+    "check": "npm run build && npm run test"
+  },
+  "keywords": [
+    "appium",
+    "mobile",
+    "automation",
+    "webdriverio",
+    "ios",
+    "android",
+    "cli"
+  ],
+  "dependencies": {
+    "appium": "^2.17.0",
+    "webdriverio": "^9.19.2"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.10",
+    "tsx": "^4.19.3",
+    "typescript": "^5.8.2",
+    "vitest": "^3.0.8"
+  }
+}

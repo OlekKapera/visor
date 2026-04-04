@@ -29,6 +29,12 @@ What real runtime requires:
 - Appium and Selenium runtime dependencies
 - a valid app identifier or environment-based fallback
 
+Platform note:
+
+- Android `app-id` maps to `appPackage`
+- iOS `app-id` maps to `bundleId` and must match an app already installed on the selected simulator or device
+- the Android package name and iOS bundle identifier can differ for the same product
+
 ### Mock runtime
 
 In mock runtime mode, Visor does not talk to a real device.

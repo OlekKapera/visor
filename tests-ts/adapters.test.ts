@@ -1,0 +1,54 @@
+import {
+  ACCESSIBILITY_ID,
+  ANDROID_UIAUTOMATOR,
+  formatDriverCreationError,
+  parseTarget,
+  resolveTapMode,
+  XPATH
+} from '../src/adapters.js';
+
+describe('adapter selector helpers', () => {
+  it('uses accessibility id for plain selector', () => {
+    const [by, value] = parseTarget('Increment');
+    expect(by).toBe(ACCESSIBILITY_ID);
+    expect(value).toBe('Increment');
+  });
+
+  it('uses xpath for text selectors', () => {
+    const [by, value] = parseTarget('text=1');
+    expect(by).toBe(XPATH);
+    expect(value).toContain("contains(@text, '1')");
+    expect(value).toContain("contains(@content-desc, '1')");
+  });
+
+  it('supports android uiautomator selectors', () => {
+    const [by, value] = parseTarget('uiautomator=new UiSelector().text("OK")');
+    expect(by).toBe(ANDROID_UIAUTOMATOR);
+    expect(value).toContain('text("OK")');
+  });
+
+  it('requires complete coordinates for tap mode', () => {
+    expect(() => resolveTapMode({ x: 10 })).toThrowError(
+      'tap coordinate mode requires both x and y'
+    );
+  });
+
+  it('rejects mixed target and coordinates', () => {
+    expect(() => resolveTapMode({ target: 'foo', x: 1, y: 2 })).toThrowError(
+      'tap cannot mix target with x/y coordinates'
+    );
+  });
+
+  it('adds an iOS-specific bundle id hint for unknown apps', () => {
+    const message = formatDriverCreationError(
+      'ios',
+      'com.example.empty_app',
+      true,
+      new Error("WebDriverError: App with bundle identifier 'com.example.empty_app' unknown")
+    );
+
+    expect(message).toContain('exact installed bundle identifier');
+    expect(message).toContain('Android package names do not carry over automatically');
+    expect(message).toContain('launch that app on the simulator/device first');
+  });
+});
