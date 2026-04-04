@@ -108,4 +108,4 @@ jobs:
       - name: Publish package to npm
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-        run: npm publish release-artifacts/${{ needs.build-and-verify.outputs.package_filename }} --access public
+        run: npm publish "./release-artifacts/${{ needs.build-and-verify.outputs.package_filename }}" --access public
