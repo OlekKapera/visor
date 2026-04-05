@@ -1,9 +1,9 @@
 ---
-title: "Visor overview"
-description: "Understand what Visor does, what problems it solves, and which parts of the product to read next."
+title: "visor overview"
+description: "Understand what visor does, what problems it solves, and which parts of the product to read next."
 ---
 
-Visor gives AI agents direct evidence from running mobile apps.
+visor gives AI agents direct evidence from running mobile apps.
 
 It does five things:
 
@@ -13,9 +13,9 @@ It does five things:
 4. Evaluates assertions against the observed UI state.
 5. Persists reports and artifacts so a person or an LLM can review what happened.
 
-## What Visor is for
+## What visor is for
 
-Visor is built for cases where code alone is not enough to verify behavior.
+visor is built for cases where code alone is not enough to verify behavior.
 
 Typical use cases:
 
@@ -26,7 +26,7 @@ Typical use cases:
 
 ## Product scope
 
-Visor currently supports mobile applications only.
+visor currently supports mobile applications only.
 
 Supported scope today:
 
@@ -47,7 +47,7 @@ The product is organized around a small set of concepts.
 
 | Concept | What it means |
 | --- | --- |
-| Target | The UI element or screen location Visor should act on. |
+| Target | The UI element or screen location visor should act on. |
 | Action | A direct operation such as tap, type, navigate, wait, screenshot, or source capture. |
 | Scenario | A JSON document that defines a repeatable sequence of steps and optional assertions. |
 | Assertion | A rule checked after the steps finish. Today, visibility is the supported assertion type. |
@@ -56,7 +56,7 @@ The product is organized around a small set of concepts.
 
 ## Documentation map
 
-Read the pages in this order if you are new to Visor:
+Read the pages in this order if you are new to visor:
 
 - [Getting started](/quickstart)
 - [Core concepts](/concepts)
@@ -75,7 +75,7 @@ Use the reference section when you need exact field names, inputs, outputs, or e
 - [Response schema](/reference/response-schema)
 - [Errors and exit codes](/reference/errors-and-exit-codes)
 
-## What Visor returns
+## What visor returns
 
 Every operation returns a structured response envelope.
 

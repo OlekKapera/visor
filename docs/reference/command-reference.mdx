@@ -1,11 +1,11 @@
 ---
 title: "Command reference"
-description: "See every Visor command, the inputs it accepts, and the shape of the data it returns."
+description: "See every visor command, the inputs it accepts, and the shape of the data it returns."
 ---
 
 This page documents the current command surface exactly as implemented.
 
-If you run `visor --help` or invoke the CLI with no command, Visor prints a usage summary instead of a JSON response envelope.
+If you run `visor --help` or invoke the CLI with no command, visor prints a usage summary instead of a JSON response envelope.
 
 ## Global runtime inputs
 
@@ -165,7 +165,7 @@ Returns action payload fields:
 - `args.format`
 - `args.bytes`
 
-For direct action commands, if Appium is auto-started for the command, Visor stops that managed Appium process before returning.
+For direct action commands, if Appium is auto-started for the command, visor stops that managed Appium process before returning.
 
 ## Scenario commands
 
@@ -217,7 +217,7 @@ Response data fields:
 
 The `run` object contains the full run result, including step results, assertion results, artifacts, determinism signature, and run-level error data.
 
-If Appium is auto-started for this command, Visor stops that managed Appium process before returning.
+If Appium is auto-started for this command, visor stops that managed Appium process before returning.
 
 ### `benchmark`
 
@@ -243,7 +243,7 @@ Response data fields:
 - `runIds`
 - `warnings`
 
-If Appium is auto-started for this command, Visor stops that managed Appium process before returning.
+If Appium is auto-started for this command, visor stops that managed Appium process before returning.
 
 ### `report`
 
@@ -285,7 +285,7 @@ Response data fields:
 
 ### `status`
 
-Purpose: report whether Appium is reachable and whether it is managed by Visor.
+Purpose: report whether Appium is reachable and whether it is managed by visor.
 
 Optional inputs:
 
@@ -303,7 +303,7 @@ Response data fields:
 
 ### `stop`
 
-Purpose: stop a Visor-managed Appium process for the given server URL.
+Purpose: stop a visor-managed Appium process for the given server URL.
 
 Optional inputs:
 

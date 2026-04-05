@@ -1,26 +1,26 @@
 ---
 title: "Platforms and runtime"
-description: "See which platforms Visor supports, how runtime resolution works, and which defaults and environment variables affect execution."
+description: "See which platforms visor supports, how runtime resolution works, and which defaults and environment variables affect execution."
 ---
 
 ## Supported platforms
 
-Visor supports two mobile platforms:
+visor supports two mobile platforms:
 
 | Platform | Driver stack | Default device name |
 | --- | --- | --- |
 | Android | Appium with `UiAutomator2` | `emulator-5554` |
 | iOS | Appium with `XCUITest` | `iPhone 17 Pro` |
 
-Visor is mobile-only today. Web support is not implemented.
+visor is mobile-only today. Web support is not implemented.
 
 ## Runtime modes
 
-Visor can run in two modes.
+visor can run in two modes.
 
 ### Real runtime
 
-In real runtime mode, Visor connects to an Appium server and interacts with an actual simulator, emulator, or device.
+In real runtime mode, visor connects to an Appium server and interacts with an actual simulator, emulator, or device.
 
 What real runtime requires:
 
@@ -37,7 +37,7 @@ Platform note:
 
 ### Mock runtime
 
-In mock runtime mode, Visor does not talk to a real device.
+In mock runtime mode, visor does not talk to a real device.
 
 Mock mode is useful when you want to:
 
@@ -53,7 +53,7 @@ Mock mode behavior:
 
 ## Default runtime values
 
-When you do not set an explicit runtime value, Visor resolves defaults.
+When you do not set an explicit runtime value, visor resolves defaults.
 
 | Setting | Default value |
 | --- | --- |
@@ -68,7 +68,7 @@ For scenario execution, platform is resolved from the scenario unless you overri
 
 ## Environment variables
 
-Visor reads runtime configuration from environment variables when explicit runtime input is not provided.
+visor reads runtime configuration from environment variables when explicit runtime input is not provided.
 
 | Environment variable | Purpose |
 | --- | --- |
@@ -78,7 +78,7 @@ Visor reads runtime configuration from environment variables when explicit runti
 | `VISOR_IOS_BUNDLE_ID` | iOS bundle identifier |
 | `VISOR_IOS_DEVICE` | iOS simulator or device name |
 | `VISOR_ATTACH_TO_RUNNING` | Reuse running app process (`true`/`1`/`yes`/`on`) |
-| `VISOR_APPIUM_CMD` | Command Visor uses when it needs to launch Appium |
+| `VISOR_APPIUM_CMD` | Command visor uses when it needs to launch Appium |
 
 Legacy `PATF_*` fallbacks are only supported for the mobile runtime variables implemented in the adapter layer:
 
@@ -93,7 +93,7 @@ There is no `PATF_*` fallback for Appium command resolution.
 
 ## Runtime resolution order
 
-For scenario runs and benchmarks, Visor resolves runtime settings in this order:
+For scenario runs and benchmarks, visor resolves runtime settings in this order:
 
 1. explicit runtime input
 2. scenario-level defaults where applicable
@@ -112,20 +112,20 @@ The main resolved values are:
 
 ## Attach mode
 
-When you pass `--attach` (or set `VISOR_ATTACH_TO_RUNNING=true`), Visor asks Appium to reuse the already running app process instead of launching from scratch.
+When you pass `--attach` (or set `VISOR_ATTACH_TO_RUNNING=true`), visor asks Appium to reuse the already running app process instead of launching from scratch.
 
 - Android capabilities used: `noReset=true`, `fullReset=false`, `autoLaunch=false`, `dontStopAppOnReset=true`
 - iOS capabilities used: `noReset=true`, `fullReset=false`, `autoLaunch=false`, `shouldTerminateApp=false`, `forceAppLaunch=false`
 
 ## Appium lifecycle and connectivity preflight
 
-For scenario execution and direct action commands in real runtime mode, Visor performs a preflight check against the Appium host and port.
+For scenario execution and direct action commands in real runtime mode, visor performs a preflight check against the Appium host and port.
 
-If Appium is unreachable and auto-start is enabled (default), Visor attempts to launch Appium first.
+If Appium is unreachable and auto-start is enabled (default), visor attempts to launch Appium first.
 
-If Appium is unreachable and auto-start is disabled (`--no-auto-start-appium`), Visor fails early with a target initialization error.
+If Appium is unreachable and auto-start is disabled (`--no-auto-start-appium`), visor fails early with a target initialization error.
 
-When Visor auto-starts Appium for a command, it also stops that managed Appium process when the command completes.
+When visor auto-starts Appium for a command, it also stops that managed Appium process when the command completes.
 
 You can also manage lifecycle explicitly with:
 

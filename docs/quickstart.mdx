@@ -1,13 +1,13 @@
 ---
 title: "Getting started"
-description: "Install Visor, check the local requirements, and run your first command."
+description: "Install visor, check the local requirements, and run your first command."
 ---
 
 Use this guide to install the TypeScript CLI, confirm it works, and then run a minimal scenario before you connect to a real mobile runtime.
 
 ## Requirements
 
-Before you install Visor, make sure you have:
+Before you install visor, make sure you have:
 
 - Node.js `20` or later
 - `npm`
@@ -16,14 +16,14 @@ For your first run, you can use mock mode. Mock mode does not require Appium, a 
 
 For real mobile runs, you also need:
 
-- a reachable Appium server, or permission for Visor to auto-start one
+- a reachable Appium server, or permission for visor to auto-start one
 - a booted Android emulator or device, or an iOS simulator or device
-- the app identifier for the app you want Visor to launch or attach to
+- the app identifier for the app you want visor to launch or attach to
 
-## Install Visor
+## Install visor
 
 <Steps>
-  <Step title="Install Visor from npm">
+  <Step title="Install visor from npm">
 
 ```bash
 npm install -g visor-ai
@@ -96,7 +96,7 @@ Expected result:
 - `data.valid` is `true`
 - `data.issues` is an empty list
 
-This verifies that your installation works and that Visor can parse the scenario correctly.
+This verifies that your installation works and that visor can parse the scenario correctly.
 
 The `output.report` field in the example is accepted by the schema, but the current report writer always emits the standard report set regardless of that list.
 
@@ -110,7 +110,7 @@ visor run checkout-smoke.json --mock --output artifacts-test
 
 Mock mode is the safest first run because it produces deterministic output without depending on Appium or mobile device setup.
 
-Visor writes a run directory under `artifacts-test/<run-id>/` with files such as:
+visor writes a run directory under `artifacts-test/<run-id>/` with files such as:
 
 - `summary.txt`
 - `summary.json`
@@ -130,7 +130,7 @@ visor run checkout-smoke.json \
   --app-id com.example.app
 ```
 
-If Appium is not already reachable, Visor attempts to start it unless you pass `--no-auto-start-appium`.
+If Appium is not already reachable, visor attempts to start it unless you pass `--no-auto-start-appium`.
 
 <Warning>
 Real runtime execution requires a booted device target and a working Appium environment. If you only want to verify the CLI and report flow, stay in `--mock` mode first.
@@ -144,11 +144,11 @@ Real runtime execution requires a booted device target and a working Appium envi
   </Card>
 
   <Card title="Scenarios" icon="list-checks" href="/features/scenarios">
-    Learn how scenario files are structured and how Visor validates them.
+    Learn how scenario files are structured and how visor validates them.
   </Card>
 
   <Card title="Artifacts and reports" icon="folder-open" href="/features/artifacts-and-reports">
-    See exactly which files Visor writes after each run.
+    See exactly which files visor writes after each run.
   </Card>
 
   <Card title="Command reference" icon="terminal" href="/reference/command-reference">
