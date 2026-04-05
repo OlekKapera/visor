@@ -43,3 +43,15 @@ visor --help
 ## Documentation
 
 Comprehensive product documentation lives in [the docs site](https://na-ca6c7a2b.mintlify.app).
+
+## Releases
+
+Create a release by running one of:
+
+```bash
+npm run release:patch
+npm run release:minor
+npm run release:major
+```
+
+Each command runs `npm run check`, bumps the version, creates the matching `vX.Y.Z` git tag, and pushes the commit and tag upstream with `git push --follow-tags`.
