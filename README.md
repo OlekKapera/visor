@@ -42,7 +42,7 @@ visor --help
 
 ## Documentation
 
-Comprehensive product documentation lives in [the docs site](https://na-ca6c7a2b.mintlify.app).
+Comprehensive product documentation lives in [the docs site](https://www.visorai.dev/docs).
 
 ## Releases
 
