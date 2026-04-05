@@ -64,13 +64,13 @@
     "links": [
       {
         "label": "GitHub",
-        "href": "https://github.com/OlekKapera/visor"
+        "href": "https://github.com/AleksKapera/visor"
       }
     ],
     "primary": {
       "type": "button",
       "label": "Repository",
-      "href": "https://github.com/OlekKapera/visor"
+      "href": "https://github.com/AleksKapera/visor"
     }
   },
   "contextual": {
@@ -83,7 +83,7 @@
   },
   "footer": {
     "socials": {
-      "github": "https://github.com/OlekKapera/visor"
+      "github": "https://github.com/AleksKapera/visor"
     }
   }
 }

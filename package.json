@@ -4,6 +4,14 @@
   "description": "Visor CLI for LLM-driven mobile app interaction and artifact capture",
   "type": "module",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/AleksKapera/visor"
+  },
+  "homepage": "https://github.com/AleksKapera/visor",
+  "bugs": {
+    "url": "https://github.com/AleksKapera/visor/issues"
+  },
   "engines": {
     "node": ">=20"
   },
