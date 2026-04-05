@@ -1,6 +1,7 @@
 import {
   ACCESSIBILITY_ID,
   ANDROID_UIAUTOMATOR,
+  MockAdapter,
   formatDriverCreationError,
   parseTarget,
   resolveTapMode,
@@ -50,5 +51,37 @@ describe('adapter selector helpers', () => {
     expect(message).toContain('exact installed bundle identifier');
     expect(message).toContain('Android package names do not carry over automatically');
     expect(message).toContain('launch that app on the simulator/device first');
+  });
+
+  it('includes scroll in adapter capabilities', () => {
+    const adapter = new MockAdapter('android');
+
+    expect(adapter.capability().commands).toContain('scroll');
+  });
+
+  it('defaults scroll percent to 70 in the mock adapter', async () => {
+    const adapter = new MockAdapter('android');
+
+    await expect(adapter.scroll({ direction: 'down' })).resolves.toEqual({
+      action: 'scroll',
+      platform: 'android',
+      args: { direction: 'down', percent: 70 }
+    });
+  });
+
+  it('rejects invalid scroll direction values', async () => {
+    const adapter = new MockAdapter('android');
+
+    await expect(adapter.scroll({ direction: 'left' })).rejects.toThrowError(
+      "scroll requires args.direction to be 'up' or 'down'"
+    );
+  });
+
+  it('rejects invalid scroll percent values', async () => {
+    const adapter = new MockAdapter('android');
+
+    await expect(adapter.scroll({ direction: 'down', percent: 0 })).rejects.toThrowError(
+      'scroll args.percent must be a number between 1 and 100'
+    );
   });
 });

@@ -60,6 +60,7 @@ Supported commands:
 - `tap`
 - `navigate`
 - `act`
+- `scroll`
 - `screenshot`
 - `wait`
 - `source`
@@ -98,6 +99,22 @@ Runtime support is narrower than schema support. The runtime currently accepts:
 
 - `name=type` with `target` and `value`
 - `name=back`
+
+#### `scroll`
+
+Required field inside `args`:
+
+- `direction` with value `up` or `down`
+
+Optional field inside `args`:
+
+- `percent`
+
+Rules:
+
+- `direction` is required
+- `direction` must be `up` or `down`
+- if present, `percent` must be a number between `1` and `100`
 
 #### `screenshot`
 

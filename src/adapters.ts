@@ -24,6 +24,7 @@ export const IOS_PREDICATE = '-ios predicate string';
 export const IOS_CLASS_CHAIN = '-ios class chain';
 
 type TapMode = 'target' | 'coordinates';
+type ScrollDirection = 'up' | 'down';
 type RemoteSession = Awaited<ReturnType<typeof remote>>;
 
 interface ParsedTarget {
@@ -167,6 +168,27 @@ export function resolveTapMode(args: Record<string, unknown>): TapMode {
   throw new Error('tap requires target or x/y coordinates');
 }
 
+function resolveScrollOptions(
+  args: Record<string, unknown>
+): { direction: ScrollDirection; percent: number; gesturePercent: number } {
+  const direction = typeof args.direction === 'string' ? args.direction.toLowerCase() : '';
+  if (direction !== 'up' && direction !== 'down') {
+    throw new Error("scroll requires args.direction to be 'up' or 'down'");
+  }
+
+  const rawPercent = args.percent ?? 70;
+  const percent = Number(rawPercent);
+  if (!Number.isFinite(percent) || percent < 1 || percent > 100) {
+    throw new Error('scroll args.percent must be a number between 1 and 100');
+  }
+
+  return {
+    direction,
+    percent,
+    gesturePercent: percent / 100
+  };
+}
+
 export class RealAppiumAdapter implements PlatformAdapter {
   private readonly platform: Platform;
   private readonly serverUrl: string;
@@ -204,7 +226,7 @@ export class RealAppiumAdapter implements PlatformAdapter {
   capability(): AdapterCapability {
     return {
       platform: this.platform,
-      commands: ['navigate', 'tap', 'act', 'screenshot', 'wait', 'source']
+      commands: ['navigate', 'tap', 'act', 'scroll', 'screenshot', 'wait', 'source']
     };
   }
 
@@ -276,6 +298,17 @@ export class RealAppiumAdapter implements PlatformAdapter {
     throw new Error(
       'Unsupported act operation; use --name type --target <selector> --value <text> or --name back'
     );
+  }
+
+  async scroll(args: Record<string, unknown>): Promise<Record<string, unknown>> {
+    const { direction, percent, gesturePercent } = resolveScrollOptions(args);
+    await this.scrollViewport(direction, gesturePercent);
+
+    return {
+      action: 'scroll',
+      platform: this.platform,
+      args: { direction, percent }
+    };
   }
 
   async screenshot(args: Record<string, unknown>): Promise<Record<string, unknown>> {
@@ -446,6 +479,68 @@ export class RealAppiumAdapter implements PlatformAdapter {
 
     throw new Error(`Coordinate tap is unsupported for platform: ${this.platform}`);
   }
+
+  private async scrollViewport(direction: ScrollDirection, gesturePercent: number): Promise<void> {
+    const driver = this.requireDriver() as any;
+    const size = await driver.getWindowSize();
+    const left = Math.max(0, Math.round(size.width * 0.1));
+    const top = Math.max(0, Math.round(size.height * 0.1));
+    const width = Math.max(1, Math.round(size.width * 0.8));
+    const height = Math.max(1, Math.round(size.height * 0.8));
+
+    if (this.platform === 'android') {
+      await driver.execute('mobile: scrollGesture', [
+        { left, top, width, height, direction, percent: gesturePercent }
+      ]);
+      return;
+    }
+
+    if (this.platform === 'ios') {
+      try {
+        await driver.execute('mobile: scrollGesture', [
+          { left, top, width, height, direction, percent: gesturePercent }
+        ]);
+        return;
+      } catch {
+        await this.swipeViewport(direction, gesturePercent, size.width, size.height);
+        return;
+      }
+    }
+
+    throw new Error(`Scroll is unsupported for platform: ${this.platform}`);
+  }
+
+  private async swipeViewport(
+    direction: ScrollDirection,
+    gesturePercent: number,
+    viewportWidth: number,
+    viewportHeight: number
+  ): Promise<void> {
+    const driver = this.requireDriver() as any;
+    const x = Math.round(viewportWidth / 2);
+    const lowY = Math.round(viewportHeight * 0.75);
+    const highY = Math.round(viewportHeight * 0.25);
+    const travel = Math.max(1, Math.round(viewportHeight * gesturePercent));
+    const startY = direction === 'down' ? lowY : highY;
+    const unclampedEndY = direction === 'down' ? startY - travel : startY + travel;
+    const endY = Math.max(1, Math.min(viewportHeight - 1, unclampedEndY));
+
+    await driver.performActions([
+      {
+        type: 'pointer',
+        id: 'finger1',
+        parameters: { pointerType: 'touch' },
+        actions: [
+          { type: 'pointerMove', duration: 0, x, y: startY },
+          { type: 'pointerDown', button: 0 },
+          { type: 'pause', duration: 150 },
+          { type: 'pointerMove', duration: 400, x, y: endY },
+          { type: 'pointerUp', button: 0 }
+        ]
+      }
+    ]);
+    await driver.releaseActions();
+  }
 }
 
 export class MockAdapter implements PlatformAdapter {
@@ -454,7 +549,7 @@ export class MockAdapter implements PlatformAdapter {
   capability(): AdapterCapability {
     return {
       platform: this.platform,
-      commands: ['navigate', 'tap', 'act', 'screenshot', 'wait', 'source']
+      commands: ['navigate', 'tap', 'act', 'scroll', 'screenshot', 'wait', 'source']
     };
   }
 
@@ -469,6 +564,15 @@ export class MockAdapter implements PlatformAdapter {
 
   async act(args: Record<string, unknown>): Promise<Record<string, unknown>> {
     return { action: 'act', platform: this.platform, args };
+  }
+
+  async scroll(args: Record<string, unknown>): Promise<Record<string, unknown>> {
+    const { direction, percent } = resolveScrollOptions(args);
+    return {
+      action: 'scroll',
+      platform: this.platform,
+      args: { direction, percent }
+    };
   }
 
   async screenshot(args: Record<string, unknown>): Promise<Record<string, unknown>> {

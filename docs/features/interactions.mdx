@@ -12,6 +12,7 @@ Visor exposes a focused interaction set. Each interaction maps to one action in 
 | `tap` | Click a target element or a coordinate on screen | No |
 | `navigate` | Send the runtime to a destination value | No |
 | `act` | Perform a helper action such as typing or going back | No |
+| `scroll` | Move the page vertically | No |
 | `wait` | Pause for a fixed number of milliseconds | No |
 | `screenshot` | Capture the current screen | Yes |
 | `source` | Capture the current UI source | Yes |
@@ -86,6 +87,32 @@ Supported operations today:
 | `back` | none | Sends a back navigation event |
 
 If `act` receives any other operation name, it fails.
+
+## Scroll
+
+`scroll` exposes page-style vertical scrolling as a direct action.
+
+Required input:
+
+- `direction` with value `up` or `down`
+
+Optional input:
+
+- `percent`
+
+Behavior:
+
+- if `percent` is omitted, Visor defaults it to `70`
+- `direction=down` moves forward down the page
+- `direction=up` moves back up the page
+- Android uses Appium `scrollGesture`
+- iOS attempts the same gesture path and falls back to a touch swipe when needed
+
+Validation rules:
+
+- `direction` is required
+- `direction` must be `up` or `down`
+- if present, `percent` must be between `1` and `100`
 
 ## Wait
 

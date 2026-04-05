@@ -13,6 +13,7 @@ export type CommandName =
   | 'tap'
   | 'navigate'
   | 'act'
+  | 'scroll'
   | 'screenshot'
   | 'wait'
   | 'source';
@@ -115,6 +116,7 @@ export interface PlatformAdapter {
   navigate(args: Record<string, unknown>): Promise<Record<string, unknown>>;
   tap(args: Record<string, unknown>): Promise<Record<string, unknown>>;
   act(args: Record<string, unknown>): Promise<Record<string, unknown>>;
+  scroll(args: Record<string, unknown>): Promise<Record<string, unknown>>;
   screenshot(args: Record<string, unknown>): Promise<Record<string, unknown>>;
   wait(args: Record<string, unknown>): Promise<Record<string, unknown>>;
   source(args: Record<string, unknown>): Promise<Record<string, unknown>>;

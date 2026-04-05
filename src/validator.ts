@@ -15,7 +15,7 @@ const ALLOWED_CONFIG = new Set(['timeoutMs', 'seed', 'artifactsDir']);
 const ALLOWED_STEP = new Set(['id', 'command', 'args']);
 const ALLOWED_ASSERT = new Set(['id', 'type', 'target']);
 const ALLOWED_OUTPUT = new Set(['report']);
-const SUPPORTED_COMMANDS = new Set(['tap', 'navigate', 'act', 'screenshot', 'wait', 'source']);
+const SUPPORTED_COMMANDS = new Set(['tap', 'navigate', 'act', 'scroll', 'screenshot', 'wait', 'source']);
 
 function validationIssue(
   severity: 'error' | 'warning',
@@ -112,6 +112,44 @@ function validateTapArgs(args: Record<string, unknown>, issuePath: string): Vali
   return issues;
 }
 
+function validateScrollArgs(args: Record<string, unknown>, issuePath: string): ValidationIssue[] {
+  const issues: ValidationIssue[] = [];
+
+  if (!Object.hasOwn(args, 'direction')) {
+    issues.push(
+      validationIssue('error', 'ARG_ERROR', 'scroll requires args.direction', issuePath)
+    );
+    return issues;
+  }
+
+  if (typeof args.direction !== 'string' || !['up', 'down'].includes(args.direction.toLowerCase())) {
+    issues.push(
+      validationIssue(
+        'error',
+        'ARG_ERROR',
+        "scroll args.direction must be 'up' or 'down'",
+        issuePath
+      )
+    );
+  }
+
+  if (
+    Object.hasOwn(args, 'percent') &&
+    (typeof args.percent !== 'number' || !Number.isFinite(args.percent) || args.percent < 1 || args.percent > 100)
+  ) {
+    issues.push(
+      validationIssue(
+        'error',
+        'ARG_ERROR',
+        'scroll args.percent must be a number between 1 and 100',
+        issuePath
+      )
+    );
+  }
+
+  return issues;
+}
+
 export function parseAndValidate(filePath: string): ParseValidationResult {
   const issues: ValidationIssue[] = [];
   const raw = JSON.parse(fs.readFileSync(filePath, 'utf8')) as unknown;
@@ -197,6 +235,10 @@ export function parseAndValidate(filePath: string): ParseValidationResult {
 
       if (command === 'navigate' && isRecord(args) && !Object.hasOwn(args, 'to')) {
         issues.push(validationIssue('error', 'ARG_ERROR', 'navigate requires args.to', `${issuePath}.args`));
+      }
+
+      if (command === 'scroll' && isRecord(args)) {
+        issues.push(...validateScrollArgs(args, `${issuePath}.args`));
       }
 
       if (command === 'screenshot' && isRecord(args) && !Object.hasOwn(args, 'label')) {

@@ -54,6 +54,7 @@ Each step must use one of these commands:
 - `tap`
 - `navigate`
 - `act`
+- `scroll`
 - `screenshot`
 - `wait`
 - `source`
@@ -72,6 +73,9 @@ Examples of validation errors:
 - `tap` mixes `target` with coordinates
 - `tap` provides only one coordinate
 - `navigate` omits `to`
+- `scroll` omits `direction`
+- `scroll` uses an unsupported `direction`
+- `scroll` uses an out-of-range `percent`
 - `wait` omits `ms`
 - `meta.platform` is not `ios` or `android`
 - unknown fields in validated objects such as the top level, `meta`, `config`, each step object, each assertion object, and `output`

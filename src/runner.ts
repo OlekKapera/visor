@@ -25,6 +25,8 @@ async function runStep(
       return adapter.navigate(args);
     case 'act':
       return adapter.act(args);
+    case 'scroll':
+      return adapter.scroll(args);
     case 'screenshot':
       return adapter.screenshot(args);
     case 'wait':

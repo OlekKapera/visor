@@ -88,6 +88,30 @@ Returns action payload fields:
 - `platform`
 - `args`
 
+### `scroll`
+
+Purpose: perform a page-style vertical scroll.
+
+Required input:
+
+- `direction` with value `up` or `down`
+
+Optional input:
+
+- `percent`, default `70`
+
+Returns action payload fields:
+
+- `action`
+- `platform`
+- `args.direction`
+- `args.percent`
+
+Current behavior:
+
+- Android uses Appium scroll gestures within the current viewport
+- iOS attempts the same gesture path and falls back to a touch swipe when needed
+
 ### `screenshot`
 
 Purpose: capture a PNG image.

@@ -20,6 +20,7 @@ describe('typescript cli', () => {
     expect(result.response.status).toBe('ok');
     expect(data.usageText).toContain('Visor TypeScript CLI');
     expect(data.commands).toContain('run');
+    expect(data.commands).toContain('scroll');
   });
 
   it('returns help when no command is provided', async () => {
@@ -60,6 +61,44 @@ describe('typescript cli', () => {
     ]);
     expect(result.code).toBe(0);
     expect(result.response.status).toBe('ok');
+  });
+
+  it('runs a scroll action in mock mode', async () => {
+    const result = await executeCommand([
+      'scroll',
+      '--platform',
+      'android',
+      '--mock',
+      '--direction',
+      'down'
+    ]);
+    expect(result.code).toBe(0);
+    expect(result.response.status).toBe('ok');
+    expect(result.response.data).toEqual({
+      action: 'scroll',
+      platform: 'android',
+      args: { direction: 'down', percent: 70 }
+    });
+  });
+
+  it('accepts explicit percent for scroll actions', async () => {
+    const result = await executeCommand([
+      'scroll',
+      '--platform',
+      'android',
+      '--mock',
+      '--direction',
+      'up',
+      '--percent',
+      '35'
+    ]);
+    expect(result.code).toBe(0);
+    expect(result.response.status).toBe('ok');
+    expect(result.response.data).toEqual({
+      action: 'scroll',
+      platform: 'android',
+      args: { direction: 'up', percent: 35 }
+    });
   });
 
   it('runs a scenario in mock mode', async () => {

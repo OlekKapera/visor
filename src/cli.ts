@@ -58,6 +58,7 @@ const ACTION_COMMANDS = new Set<CommandName>([
   'tap',
   'navigate',
   'act',
+  'scroll',
   'screenshot',
   'wait',
   'source'
@@ -95,6 +96,8 @@ const ACTION_SPEC: Record<string, OptionType> = {
   target: 'string',
   x: 'number',
   y: 'number',
+  direction: 'string',
+  percent: 'number',
   normalized: 'boolean',
   to: 'string',
   name: 'string',
@@ -155,6 +158,7 @@ const COMMAND_SPECS: Record<string, Record<string, OptionType>> = {
   tap: ACTION_SPEC,
   navigate: ACTION_SPEC,
   act: ACTION_SPEC,
+  scroll: ACTION_SPEC,
   screenshot: ACTION_SPEC,
   wait: ACTION_SPEC,
   source: ACTION_SPEC
@@ -176,11 +180,12 @@ function helpText(): string {
     '  start [--server-url <url>]',
     '  status [--server-url <url>]',
     '  stop [--server-url <url>] [--force]',
-    '  tap|navigate|act|screenshot|wait|source',
+    '  tap|navigate|act|scroll|screenshot|wait|source',
     '',
     'Examples:',
     '  visor validate scenarios/checkout-smoke.json',
     '  visor run scenarios/checkout-smoke.json --mock --output artifacts-test',
+    '  visor scroll --platform android --mock --direction down',
     '  node dist/main.js status'
   ].join('\n');
 }
@@ -380,6 +385,7 @@ function cmdHelp(): CommandResult {
     examples: [
       'visor validate scenarios/checkout-smoke.json',
       'visor run scenarios/checkout-smoke.json --mock --output artifacts-test',
+      'visor scroll --platform android --mock --direction down',
       'node dist/main.js status'
     ]
   } satisfies HelpData;
